@@ -1,5 +1,5 @@
 /* ============================================================
-   NEONCHAT — script.js
+   StarEnds — script.js
    Real-time group chat using Firebase v9 (Modular SDK)
 
    This file handles:
@@ -797,7 +797,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  console.log('⚡ NeonChat initialized. Waiting for auth...');
+  console.log('⚡ StarEnds initialized. Waiting for auth...');
 });
 
 // Cleanup on page unload
