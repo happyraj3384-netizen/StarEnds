@@ -1,0 +1,1383 @@
+/* ============================================================
+   NEONCHAT — style.css  (COSMIC UPGRADE)
+   Deep space · Glassmorphism · Cyberpunk luxury
+
+   ╔══════════════════════════════════════════════════╗
+   ║  HOW THIS FILE IS ORGANISED                      ║
+   ║  1.  CSS Variables  (colors, fonts, sizes)       ║
+   ║  2.  Reset & Base                                ║
+   ║  3.  Starfield Background                        ║
+   ║  4.  Login Screen                                ║
+   ║  5.  App Layout                                  ║
+   ║  6.  Sidebar (glass panel)                       ║
+   ║  7.  Chat Main                                   ║
+   ║  8.  Chat Header                                 ║
+   ║  9.  Messages                                    ║
+   ║  10. Typing Indicator                            ║
+   ║  11. Input Bar                                   ║
+   ║  12. Sidebar Overlay                             ║
+   ║  13. Toast Notifications                         ║
+   ║  14. Loading Spinner                             ║
+   ║  15. Responsive / Mobile                         ║
+   ╚══════════════════════════════════════════════════╝
+
+   FONT STACK
+   · Syne         — display headings, logo
+   · JetBrains Mono — mono labels, timestamps
+   · Outfit       — body, messages
+   ============================================================ */
+
+
+/* ============================================================
+   1. CSS VARIABLES
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   PASTE THIS BLOCK at the very top of your style.css,
+   replacing your existing :root { } section entirely.
+   ============================================================ */
+:root {
+  /* ── Deep space backgrounds ── */
+  --space-void:    #02030A;      /* Absolute dark — outermost layer          */
+  --space-deep:    #060818;      /* Body / starfield canvas                   */
+  --space-nebula:  #0A0D1F;      /* Sidebar glass base                        */
+  --space-panel:   #0E1228;      /* Chat main base                            */
+  --space-surface: rgba(14,18,40,0.75);   /* Glassmorphism surface            */
+  --space-lift:    rgba(20,26,58,0.8);    /* Raised glass (cards, inputs)     */
+  --space-hover:   rgba(28,36,75,0.9);    /* Hover state                      */
+
+  /* ── Neon accent palette ── */
+  --neon:          #00D4FF;      /* Primary — electric cyan                   */
+  --neon-bright:   #40E8FF;      /* Hover / active cyan                       */
+  --neon-dim:      rgba(0,212,255,0.10);
+  --neon-glow:     rgba(0,212,255,0.22);
+  --neon2:         #8B5CF6;      /* Secondary — deep violet                   */
+  --neon2-bright:  #A78BFA;
+  --neon2-dim:     rgba(139,92,246,0.12);
+  --neon2-glow:    rgba(139,92,246,0.25);
+  --neon3:         #00FFA3;      /* Tertiary — cosmic mint (online)           */
+  --neon3-glow:    rgba(0,255,163,0.25);
+  --nebula-pink:   #FF6EC7;      /* Accent — nebula rose                      */
+  --nebula-amber:  #FFB347;      /* Accent — pulsar amber                     */
+  --red:           #FF4757;
+  --gold:          #FFD93D;
+
+  /* ── Text ── */
+  --text-1:        #EEF2FF;      /* Primary — near white with blue tint       */
+  --text-2:        #7A8BB5;      /* Secondary / muted                         */
+  --text-3:        #3A4566;      /* Very muted / placeholder                  */
+
+  /* ── Borders ── */
+  --border:        rgba(255,255,255,0.05);
+  --border2:       rgba(0,212,255,0.18);
+  --border3:       rgba(139,92,246,0.20);
+
+  /* ── Fonts ── */
+  --font-display: 'Syne', sans-serif;
+  --font-mono:    'JetBrains Mono', monospace;
+  --font-body:    'Outfit', sans-serif;
+
+  /* ── Sizes ── */
+  --sidebar-w:    268px;
+  --header-h:     58px;
+  --radius:       12px;
+  --radius-sm:    8px;
+  --radius-lg:    18px;
+  --radius-msg:   18px;
+  --tr:           0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --tr-slow:      0.45s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ── Shadows & glows ── */
+  --shadow-void:  0 24px 64px rgba(0,0,0,0.8);
+  --shadow-card:  0 8px 32px rgba(0,0,0,0.6), 0 2px 8px rgba(0,0,0,0.4);
+  --shadow-neon:  0 0 24px rgba(0,212,255,0.30), 0 0 60px rgba(0,212,255,0.12);
+  --shadow-neon2: 0 0 24px rgba(139,92,246,0.35), 0 0 60px rgba(139,92,246,0.14);
+  --glow-sm:      0 0 12px rgba(0,212,255,0.3);
+  --glow-lg:      0 0 40px rgba(0,212,255,0.25), 0 0 80px rgba(139,92,246,0.15);
+}
+
+
+/* ============================================================
+   2. RESET & BASE
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   REPLACE your existing "RESET & BASE" section with this.
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  font-family: var(--font-body);
+  background: var(--space-deep);
+  color: var(--text-1);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Cosmic scrollbar ── */
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--neon2), var(--neon));
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--neon); }
+
+/* Selection highlight */
+::selection {
+  background: rgba(0,212,255,0.22);
+  color: var(--text-1);
+}
+
+a { color: var(--neon); text-decoration: none; transition: color var(--tr); }
+a:hover { color: var(--neon-bright); }
+button { font-family: var(--font-body); cursor: pointer; }
+img { display: block; }
+
+
+/* ============================================================
+   3. STARFIELD BACKGROUND
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ADD this entire new section right after your :root block.
+   It creates the animated star canvas behind everything.
+   ============================================================ */
+
+/*
+  The starfield is rendered on the <body> using layered
+  radial-gradient noise combined with two CSS-animated
+  star layers created with box-shadow on pseudo-elements.
+  No extra HTML or JS needed — pure CSS.
+*/
+
+body::before,
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Layer 1 — deep nebula gradient mesh */
+body::before {
+  background:
+    /* Cyan nebula pocket — top right */
+    radial-gradient(ellipse 60% 50% at 80% 10%,  rgba(0,180,255,0.07)   0%, transparent 65%),
+    /* Violet cloud — bottom left */
+    radial-gradient(ellipse 55% 60% at 10% 90%,  rgba(120,60,255,0.09)  0%, transparent 65%),
+    /* Rose nebula — mid left */
+    radial-gradient(ellipse 40% 35% at 5%  45%,  rgba(255,60,180,0.05)  0%, transparent 60%),
+    /* Amber pulsar — center */
+    radial-gradient(ellipse 30% 25% at 50% 50%,  rgba(255,160,40,0.03)  0%, transparent 55%),
+    /* Base void */
+    var(--space-deep);
+  animation: nebulaDrift 30s ease-in-out infinite alternate;
+}
+
+@keyframes nebulaDrift {
+  0%   { opacity: 0.85; transform: scale(1)    rotate(0deg); }
+  50%  { opacity: 1;    transform: scale(1.04) rotate(0.4deg); }
+  100% { opacity: 0.9;  transform: scale(1)    rotate(-0.3deg); }
+}
+
+/* Layer 2 — star field (tiny white dots via CSS) */
+body::after {
+  background-image:
+    /* Small stars */
+    radial-gradient(1px 1px at  8%  12%, rgba(255,255,255,0.55) 0%, transparent 100%),
+    radial-gradient(1px 1px at 22%  6%,  rgba(255,255,255,0.40) 0%, transparent 100%),
+    radial-gradient(1px 1px at 37%  18%, rgba(255,255,255,0.60) 0%, transparent 100%),
+    radial-gradient(1px 1px at 52%  4%,  rgba(255,255,255,0.35) 0%, transparent 100%),
+    radial-gradient(1px 1px at 68%  22%, rgba(255,255,255,0.50) 0%, transparent 100%),
+    radial-gradient(1px 1px at 78%  8%,  rgba(255,255,255,0.45) 0%, transparent 100%),
+    radial-gradient(1px 1px at 91%  15%, rgba(255,255,255,0.55) 0%, transparent 100%),
+    radial-gradient(1px 1px at 14%  35%, rgba(255,255,255,0.30) 0%, transparent 100%),
+    radial-gradient(1px 1px at 29%  48%, rgba(255,255,255,0.45) 0%, transparent 100%),
+    radial-gradient(1px 1px at 45%  38%, rgba(255,255,255,0.35) 0%, transparent 100%),
+    radial-gradient(1px 1px at 61%  55%, rgba(255,255,255,0.50) 0%, transparent 100%),
+    radial-gradient(1px 1px at 74%  42%, rgba(255,255,255,0.40) 0%, transparent 100%),
+    radial-gradient(1px 1px at 87%  60%, rgba(255,255,255,0.35) 0%, transparent 100%),
+    radial-gradient(1px 1px at  5%  68%, rgba(255,255,255,0.45) 0%, transparent 100%),
+    radial-gradient(1px 1px at 18%  75%, rgba(255,255,255,0.30) 0%, transparent 100%),
+    radial-gradient(1px 1px at 33%  82%, rgba(255,255,255,0.50) 0%, transparent 100%),
+    radial-gradient(1px 1px at 56%  70%, rgba(255,255,255,0.40) 0%, transparent 100%),
+    radial-gradient(1px 1px at 71%  88%, rgba(255,255,255,0.35) 0%, transparent 100%),
+    radial-gradient(1px 1px at 84%  78%, rgba(255,255,255,0.55) 0%, transparent 100%),
+    radial-gradient(1px 1px at 95%  92%, rgba(255,255,255,0.45) 0%, transparent 100%),
+    /* Medium stars */
+    radial-gradient(1.5px 1.5px at 40%  28%, rgba(180,220,255,0.70) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 65%  14%, rgba(180,220,255,0.65) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 20%  58%, rgba(200,180,255,0.60) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 82%  44%, rgba(180,240,220,0.65) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 10%  82%, rgba(180,220,255,0.55) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 50%  92%, rgba(200,180,255,0.60) 0%, transparent 100%),
+    /* Bright accent stars */
+    radial-gradient(2px 2px at 25%  22%, rgba(0,212,255,0.85)    0%, transparent 100%),
+    radial-gradient(2px 2px at 72%  66%, rgba(139,92,246,0.80)   0%, transparent 100%),
+    radial-gradient(2px 2px at 90%  30%, rgba(0,255,163,0.75)    0%, transparent 100%),
+    radial-gradient(2px 2px at 48%  78%, rgba(255,110,199,0.70)  0%, transparent 100%);
+  animation: starTwinkle 8s ease-in-out infinite alternate;
+}
+
+@keyframes starTwinkle {
+  0%   { opacity: 0.6; }
+  25%  { opacity: 1.0; }
+  50%  { opacity: 0.7; }
+  75%  { opacity: 0.95; }
+  100% { opacity: 0.65; }
+}
+
+
+/* ============================================================
+   4. LOGIN SCREEN
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   REPLACE your entire "LOGIN SCREEN" section with this.
+   ============================================================ */
+.login-screen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  overflow: hidden;
+  /* no background — the body::before starfield shows through */
+}
+
+/* Particle container (JS-generated dots float up) */
+.particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.particle {
+  position: absolute;
+  border-radius: 50%;
+  animation: floatUp linear infinite;
+  opacity: 0;
+}
+
+@keyframes floatUp {
+  0%   { transform: translateY(0) scale(0);   opacity: 0; }
+  10%  { opacity: 0.7; }
+  90%  { opacity: 0.15; }
+  100% { transform: translateY(-100vh) scale(1.6); opacity: 0; }
+}
+
+/* ── Login card — glassmorphism ── */
+.login-card {
+  position: relative;
+  z-index: 1;
+  /* Glass effect */
+  background: linear-gradient(
+    135deg,
+    rgba(14,18,40,0.85) 0%,
+    rgba(10,13,31,0.90) 100%
+  );
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid rgba(0,212,255,0.20);
+  border-radius: 24px;
+  padding: 3.2rem 2.8rem;
+  width: 400px;
+  max-width: calc(100% - 2rem);
+  text-align: center;
+  box-shadow:
+    0 32px 80px rgba(0,0,0,0.7),
+    0 0 0 1px rgba(255,255,255,0.04) inset,
+    0 0 60px rgba(0,212,255,0.08),
+    0 0 120px rgba(139,92,246,0.06);
+  animation: cardEntrance 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes cardEntrance {
+  from { opacity: 0; transform: scale(0.82) translateY(28px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);    }
+}
+
+/* Neon top-edge glow line */
+.login-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 15%; right: 15%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(0,212,255,0.8),
+    rgba(139,92,246,0.6),
+    transparent
+  );
+  border-radius: 1px;
+}
+
+/* Subtle inner light reflection */
+.login-card::after {
+  content: '';
+  position: absolute;
+  top: 1px; left: 10%; right: 10%;
+  height: 60px;
+  background: linear-gradient(
+    180deg,
+    rgba(255,255,255,0.04) 0%,
+    transparent 100%
+  );
+  border-radius: 0 0 50% 50%;
+  pointer-events: none;
+}
+
+/* ── Logo ── */
+.login-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 0.6rem;
+}
+
+.logo-icon {
+  font-size: 2.2rem;
+  filter: drop-shadow(0 0 14px var(--neon));
+  animation: cosmicPulse 2.5s ease-in-out infinite;
+}
+
+@keyframes cosmicPulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 8px var(--neon)) drop-shadow(0 0 20px rgba(0,212,255,0.3));
+    transform: scale(1);
+  }
+  50% {
+    filter: drop-shadow(0 0 22px var(--neon)) drop-shadow(0 0 50px rgba(0,212,255,0.5));
+    transform: scale(1.06);
+  }
+}
+
+/* Re-alias so .sidebar-logo .logo-icon uses the same animation */
+@keyframes pulse { 0%,100%{ filter: drop-shadow(0 0 8px var(--neon)); } 50%{ filter: drop-shadow(0 0 22px var(--neon)); } }
+
+.logo-text {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  background: linear-gradient(135deg, var(--neon) 0%, var(--neon2-bright) 60%, var(--nebula-pink) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: none;
+}
+
+.login-tagline {
+  color: var(--text-2);
+  font-size: 0.88rem;
+  margin-bottom: 2.2rem;
+  letter-spacing: 0.04em;
+}
+
+/* ── Google login button ── */
+.btn-google-login {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  padding: 0.95rem 1.5rem;
+  background: linear-gradient(135deg, rgba(20,26,58,0.9), rgba(14,18,40,0.95));
+  border: 1px solid rgba(0,212,255,0.22);
+  border-radius: var(--radius);
+  color: var(--text-1);
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  transition: all var(--tr-slow);
+  margin-bottom: 1.4rem;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Shimmer sweep on hover */
+.btn-google-login::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 100%; height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(0,212,255,0.08),
+    transparent
+  );
+  transition: left 0.5s ease;
+}
+.btn-google-login:hover::before { left: 100%; }
+
+.btn-google-login:hover {
+  background: linear-gradient(135deg, rgba(28,36,75,0.95), rgba(20,26,58,1));
+  border-color: var(--neon);
+  box-shadow: var(--shadow-neon);
+  transform: translateY(-2px);
+}
+.btn-google-login:active { transform: translateY(0); }
+
+.login-note {
+  font-size: 0.72rem;
+  color: var(--text-3);
+  line-height: 1.6;
+}
+
+
+/* ============================================================
+   5. APP LAYOUT
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   REPLACE your ".app" section with this.
+   ============================================================ */
+.app {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;        /* sits above the body starfield layers */
+  animation: appFadeIn 0.5s ease forwards;
+}
+
+@keyframes appFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+
+/* ============================================================
+   6. SIDEBAR  (Glass cosmic panel)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   REPLACE your entire "SIDEBAR" section with this.
+   ============================================================ */
+.sidebar {
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  /* Glassmorphism */
+  background: linear-gradient(
+    180deg,
+    rgba(10,13,31,0.88) 0%,
+    rgba(8,10,24,0.92) 100%
+  );
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  border-right: 1px solid rgba(0,212,255,0.10);
+  box-shadow: 4px 0 32px rgba(0,0,0,0.5), inset -1px 0 0 rgba(255,255,255,0.03);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  transition: transform var(--tr-slow);
+  position: relative;
+  z-index: 100;
+}
+
+/* Vertical neon accent line on right edge of sidebar */
+.sidebar::after {
+  content: '';
+  position: absolute;
+  top: 10%; bottom: 10%; right: 0;
+  width: 1px;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    rgba(0,212,255,0.3) 30%,
+    rgba(139,92,246,0.25) 70%,
+    transparent
+  );
+  pointer-events: none;
+}
+
+/* ── Sidebar logo ── */
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 1.3rem 1.3rem 1.1rem;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-1);
+  letter-spacing: 0.06em;
+  background: linear-gradient(90deg, rgba(0,212,255,0.04), transparent);
+}
+
+.sidebar-logo .logo-icon {
+  font-size: 1.5rem;
+  animation: pulse 2.5s ease-in-out infinite;
+}
+
+/* ── Section label ── */
+.sidebar-section {
+  padding: 1rem 0.9rem 0.6rem;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.sidebar-label {
+  font-family: var(--font-mono);
+  font-size: 0.60rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  color: var(--text-3);
+  margin-bottom: 0.6rem;
+  padding: 0 0.4rem;
+  text-transform: uppercase;
+}
+
+/* ── Channel item ── */
+.channel-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.55rem 0.9rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all var(--tr);
+  position: relative;
+}
+
+.channel-item:hover {
+  background: rgba(0,212,255,0.06);
+  color: var(--text-1);
+}
+
+.channel-item.active {
+  background: linear-gradient(90deg, rgba(0,212,255,0.12), rgba(0,212,255,0.04));
+  color: var(--neon);
+  font-weight: 600;
+  box-shadow: inset 2px 0 0 var(--neon);
+}
+
+.channel-hash {
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  opacity: 0.6;
+  color: var(--neon);
+}
+
+.channel-badge {
+  margin-left: auto;
+  background: var(--red);
+  color: white;
+  font-size: 0.6rem;
+  font-weight: 700;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 8px rgba(255,71,87,0.5);
+}
+
+/* ── Online users list ── */
+.online-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.online-user {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0.45rem 0.7rem;
+  border-radius: var(--radius-sm);
+  transition: background var(--tr);
+  cursor: default;
+}
+.online-user:hover { background: rgba(139,92,246,0.06); }
+
+.ou-avatar {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1.5px solid var(--neon3);
+  box-shadow: 0 0 8px var(--neon3-glow);
+  flex-shrink: 0;
+}
+
+.ou-name {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ou-you {
+  font-size: 0.62rem;
+  color: var(--neon);
+  font-family: var(--font-mono);
+  margin-left: auto;
+  flex-shrink: 0;
+  letter-spacing: 0.05em;
+}
+
+/* ── Sidebar footer ── */
+.sidebar-footer {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.95rem 1.1rem;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  background: linear-gradient(
+    0deg,
+    rgba(2,3,10,0.95) 0%,
+    rgba(10,13,31,0.85) 100%
+  );
+  backdrop-filter: blur(10px);
+  margin-top: auto;
+}
+
+.sf-avatar {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--neon);
+  box-shadow: 0 0 12px rgba(0,212,255,0.45), 0 0 28px rgba(0,212,255,0.15);
+  flex-shrink: 0;
+  transition: box-shadow var(--tr);
+}
+.sf-avatar:hover {
+  box-shadow: 0 0 18px rgba(0,212,255,0.65), 0 0 40px rgba(0,212,255,0.25);
+}
+
+.sf-info { flex: 1; min-width: 0; }
+
+.sf-name {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--text-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+
+.sf-status {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.70rem;
+  color: var(--text-2);
+  margin-top: 1px;
+}
+
+/* Status dots */
+.status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.status-dot.online {
+  background: var(--neon3);
+  box-shadow: 0 0 6px var(--neon3), 0 0 12px rgba(0,255,163,0.3);
+  animation: onlinePulse 2s ease-in-out infinite;
+}
+.status-dot.offline { background: var(--text-3); }
+
+@keyframes onlinePulse {
+  0%, 100% { box-shadow: 0 0 4px var(--neon3), 0 0 8px rgba(0,255,163,0.2); }
+  50%       { box-shadow: 0 0 10px var(--neon3), 0 0 20px rgba(0,255,163,0.45); }
+}
+
+/* Logout button */
+.btn-logout {
+  background: rgba(255,71,87,0.0);
+  border: 1px solid rgba(255,255,255,0.06);
+  color: var(--text-2);
+  width: 32px; height: 32px;
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: all var(--tr);
+}
+.btn-logout:hover {
+  background: rgba(255,71,87,0.14);
+  border-color: rgba(255,71,87,0.45);
+  color: var(--red);
+  box-shadow: 0 0 12px rgba(255,71,87,0.2);
+}
+
+
+/* ============================================================
+   7. CHAT MAIN
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   REPLACE your "CHAT MAIN" section with this.
+   ============================================================ */
+.chat-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  /* Very subtle tinted glass over the starfield */
+  background: linear-gradient(
+    180deg,
+    rgba(10,13,31,0.55) 0%,
+    rgba(6,8,24,0.65) 100%
+  );
+  backdrop-filter: blur(2px);
+  position: relative;
+}
+
+/* Subtle grid scan-lines on chat surface */
+.chat-main::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0,212,255,0.012) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,255,0.012) 1px, transparent 1px);
+  background-size: 52px 52px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Neon bottom vignette — fades into the input bar */
+.chat-main::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 140px;
+  background: linear-gradient(
+    0deg,
+    rgba(2,3,10,0.7) 0%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+
+/* ============================================================
+   8. CHAT HEADER
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   REPLACE your ".chat-header" block with this.
+   ============================================================ */
+.chat-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  height: var(--header-h);
+  padding: 0 1.4rem;
+  background: linear-gradient(
+    90deg,
+    rgba(8,10,24,0.92) 0%,
+    rgba(10,13,31,0.88) 100%
+  );
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(0,212,255,0.10);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.03), 0 4px 24px rgba(0,0,0,0.4);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+}
+
+.btn-menu {
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+  background: none;
+  border: none;
+  padding: 4px;
+  flex-shrink: 0;
+}
+.btn-menu span {
+  display: block;
+  width: 20px; height: 2px;
+  background: var(--text-2);
+  border-radius: 2px;
+  transition: all var(--tr);
+}
+
+.chat-header-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.ch-hash {
+  font-family: var(--font-mono);
+  font-size: 1.3rem;
+  color: var(--neon);
+  flex-shrink: 0;
+  text-shadow: var(--glow-sm);
+}
+
+.ch-name {
+  font-family: var(--font-display);
+  font-size: 1.0rem;
+  font-weight: 700;
+  color: var(--text-1);
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+
+.ch-desc {
+  font-size: 0.78rem;
+  color: var(--text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-left: 0.9rem;
+  border-left: 1px solid rgba(255,255,255,0.07);
+  margin-left: 0.4rem;
+}
+
+.ch-online-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.76rem;
+  color: var(--text-2);
+  background: rgba(0,212,255,0.06);
+  border: 1px solid rgba(0,212,255,0.15);
+  padding: 0.3rem 0.9rem;
+  border-radius: 100px;
+  flex-shrink: 0;
+  transition: all var(--tr);
+}
+.ch-online-chip:hover {
+  background: rgba(0,212,255,0.10);
+  color: var(--text-1);
+}
+
+
+/* ============================================================
+   9. MESSAGES
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   REPLACE your "MESSAGES CONTAINER" and "MESSAGE BUBBLE"
+   sections with this entire block.
+   ============================================================ */
+.messages-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.8rem 1.4rem 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  position: relative;
+  z-index: 1;
+  scroll-behavior: smooth;
+}
+
+/* System / welcome pill */
+.system-message {
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--text-2);
+  background: linear-gradient(90deg, rgba(0,212,255,0.06), rgba(139,92,246,0.06));
+  border: 1px solid rgba(0,212,255,0.12);
+  border-radius: 100px;
+  padding: 0.4rem 1.4rem;
+  margin: 0.5rem auto 1.2rem;
+  max-width: 440px;
+  animation: fadeInUp 0.4s ease;
+  backdrop-filter: blur(8px);
+}
+
+/* Join / leave notification */
+.join-notification {
+  text-align: center;
+  font-size: 0.73rem;
+  color: var(--neon3);
+  font-family: var(--font-mono);
+  padding: 0.3rem 0;
+  animation: fadeInUp 0.4s ease;
+  opacity: 0.65;
+  letter-spacing: 0.04em;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+/* ── Message wrapper ── */
+.message {
+  display: flex;
+  gap: 11px;
+  padding: 0.4rem 0.5rem;
+  border-radius: var(--radius);
+  position: relative;
+  transition: background var(--tr);
+  animation: msgEntrance 0.32s cubic-bezier(0.34, 1.3, 0.64, 1) forwards;
+}
+
+@keyframes msgEntrance {
+  from { opacity: 0; transform: translateY(12px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+.message:hover {
+  background: rgba(0,212,255,0.03);
+}
+
+/* Compact — same sender, < 3 min apart */
+.message.compact     { padding-top: 2px; }
+.message.compact .msg-avatar { visibility: hidden; }
+.message.compact .msg-meta   { display: none; }
+
+/* Show delete on hover */
+.message:hover .btn-delete-msg { opacity: 1; }
+
+/* Avatar */
+.msg-avatar {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  margin-top: 2px;
+  border: 1.5px solid rgba(255,255,255,0.08);
+  transition: border-color var(--tr), box-shadow var(--tr);
+}
+.message:hover .msg-avatar {
+  border-color: rgba(139,92,246,0.5);
+  box-shadow: 0 0 10px rgba(139,92,246,0.25);
+}
+
+.msg-body { flex: 1; min-width: 0; }
+
+/* Author + timestamp row */
+.msg-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+/* Username colors */
+.msg-author         { font-size: 0.84rem; font-weight: 600; font-family: var(--font-mono); cursor: default; }
+.msg-author.color-1 { color: var(--neon);         text-shadow: 0 0 10px rgba(0,212,255,0.4); }
+.msg-author.color-2 { color: var(--neon2-bright);  text-shadow: 0 0 10px rgba(167,139,250,0.4); }
+.msg-author.color-3 { color: var(--neon3);         text-shadow: 0 0 10px rgba(0,255,163,0.35); }
+.msg-author.color-4 { color: var(--gold);          text-shadow: 0 0 10px rgba(255,217,61,0.35); }
+.msg-author.color-5 { color: var(--nebula-pink);   text-shadow: 0 0 10px rgba(255,110,199,0.35); }
+.msg-author.color-6 { color: var(--nebula-amber);  text-shadow: 0 0 10px rgba(255,179,71,0.35); }
+
+.msg-time {
+  font-size: 0.63rem;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+}
+
+/* ── Message bubble ── */
+.msg-text {
+  font-size: 0.92rem;
+  color: var(--text-1);
+  line-height: 1.58;
+  word-break: break-word;
+  background: linear-gradient(
+    135deg,
+    rgba(14,18,40,0.80) 0%,
+    rgba(20,26,58,0.75) 100%
+  );
+  backdrop-filter: blur(8px);
+  padding: 0.6rem 1rem;
+  border-radius: 4px var(--radius-msg) var(--radius-msg) var(--radius-msg);
+  display: inline-block;
+  max-width: 100%;
+  border: 1px solid rgba(255,255,255,0.05);
+  border-top-color: rgba(255,255,255,0.08);
+  transition: background var(--tr), box-shadow var(--tr);
+  position: relative;
+}
+.message:hover .msg-text {
+  background: linear-gradient(
+    135deg,
+    rgba(20,26,58,0.88) 0%,
+    rgba(28,36,75,0.80) 100%
+  );
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+}
+
+/* ── Own messages (right-aligned) ── */
+.message.own { flex-direction: row-reverse; }
+.message.own .msg-meta { flex-direction: row-reverse; }
+.message.own .msg-author { color: var(--neon2-bright); text-shadow: 0 0 10px rgba(167,139,250,0.4); }
+.message.own .msg-text {
+  background: linear-gradient(
+    135deg,
+    rgba(80,50,180,0.22) 0%,
+    rgba(50,30,130,0.20) 100%
+  );
+  border-color: rgba(139,92,246,0.20);
+  border-top-color: rgba(139,92,246,0.28);
+  border-radius: var(--radius-msg) 4px var(--radius-msg) var(--radius-msg);
+}
+.message.own:hover .msg-text {
+  background: linear-gradient(
+    135deg,
+    rgba(100,65,220,0.28) 0%,
+    rgba(70,42,170,0.25) 100%
+  );
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3), 0 0 20px rgba(139,92,246,0.08);
+}
+
+/* Delete button */
+.btn-delete-msg {
+  position: absolute;
+  top: 5px; right: 5px;
+  background: rgba(255,71,87,0.10);
+  border: 1px solid rgba(255,71,87,0.25);
+  color: var(--red);
+  width: 24px; height: 24px;
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.68rem;
+  opacity: 0;
+  transition: all var(--tr);
+  cursor: pointer;
+}
+.btn-delete-msg:hover {
+  background: rgba(255,71,87,0.25);
+  box-shadow: 0 0 8px rgba(255,71,87,0.3);
+}
+
+/* Deleted placeholder */
+.msg-deleted {
+  font-size: 0.80rem;
+  color: var(--text-3);
+  font-style: italic;
+}
+
+
+/* ============================================================
+   10. TYPING INDICATOR
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   REPLACE your "TYPING INDICATOR" section with this.
+   ============================================================ */
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0.4rem 1.4rem;
+  font-size: 0.76rem;
+  color: var(--text-2);
+  position: relative;
+  z-index: 1;
+  min-height: 28px;
+  font-style: italic;
+}
+
+.typing-dots {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.typing-dots span {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--neon);
+  box-shadow: 0 0 6px rgba(0,212,255,0.6);
+  animation: typingBounce 1.2s ease-in-out infinite;
+}
+.typing-dots span:nth-child(2) { animation-delay: 0.2s; background: var(--neon2-bright); }
+.typing-dots span:nth-child(3) { animation-delay: 0.4s; background: var(--nebula-pink); }
+
+@keyframes typingBounce {
+  0%, 60%, 100% { transform: translateY(0);   opacity: 0.35; }
+  30%            { transform: translateY(-6px); opacity: 1; }
+}
+
+
+/* ============================================================
+   11. INPUT BAR
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   REPLACE your "INPUT BAR" section with this.
+   ============================================================ */
+.input-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.9rem 1.4rem;
+  background: linear-gradient(
+    0deg,
+    rgba(2,3,10,0.97) 0%,
+    rgba(8,10,24,0.92) 100%
+  );
+  backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(0,212,255,0.08);
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.5);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+}
+
+/* Emoji toggle */
+.btn-emoji {
+  background: transparent;
+  border: none;
+  font-size: 1.3rem;
+  width: 38px; height: 38px;
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: background var(--tr), transform var(--tr);
+  line-height: 1;
+}
+.btn-emoji:hover {
+  background: rgba(0,212,255,0.08);
+  transform: scale(1.12) rotate(8deg);
+}
+
+/* Emoji picker glass panel */
+.emoji-picker {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 1.4rem;
+  background: linear-gradient(
+    135deg,
+    rgba(10,13,31,0.95) 0%,
+    rgba(8,10,24,0.98) 100%
+  );
+  backdrop-filter: blur(24px);
+  border: 1px solid rgba(0,212,255,0.18);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  display: none;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 4px;
+  width: 290px;
+  z-index: 50;
+  box-shadow:
+    0 24px 60px rgba(0,0,0,0.7),
+    0 0 30px rgba(0,212,255,0.08),
+    inset 0 1px 0 rgba(255,255,255,0.05);
+  animation: pickerSlide 0.22s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+.emoji-picker.open { display: grid; }
+
+@keyframes pickerSlide {
+  from { opacity: 0; transform: translateY(12px) scale(0.94); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
+.emoji-picker span {
+  font-size: 1.3rem;
+  cursor: pointer;
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 8px;
+  transition: background var(--tr), transform 0.15s ease;
+  line-height: 1;
+}
+.emoji-picker span:hover {
+  background: rgba(0,212,255,0.10);
+  transform: scale(1.22);
+}
+
+/* Message text input */
+.msg-input {
+  flex: 1;
+  background: linear-gradient(
+    135deg,
+    rgba(14,18,40,0.85) 0%,
+    rgba(20,26,58,0.80) 100%
+  );
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: var(--radius);
+  padding: 0.7rem 1.1rem;
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  color: var(--text-1);
+  outline: none;
+  transition: border-color var(--tr), box-shadow var(--tr), background var(--tr);
+  min-width: 0;
+}
+.msg-input::placeholder { color: var(--text-3); }
+.msg-input:focus {
+  border-color: rgba(0,212,255,0.40);
+  background: linear-gradient(
+    135deg,
+    rgba(20,26,58,0.92) 0%,
+    rgba(28,36,75,0.88) 100%
+  );
+  box-shadow:
+    0 0 0 3px rgba(0,212,255,0.09),
+    0 0 20px rgba(0,212,255,0.06);
+}
+
+/* Character counter */
+.char-count {
+  font-family: var(--font-mono);
+  font-size: 0.63rem;
+  color: var(--text-3);
+  flex-shrink: 0;
+  min-width: 32px;
+  text-align: right;
+}
+.char-count.warn { color: var(--gold); }
+.char-count.over { color: var(--red); text-shadow: 0 0 8px rgba(255,71,87,0.5); }
+
+/* Send button */
+.btn-send {
+  background: linear-gradient(135deg, var(--neon) 0%, var(--neon2-bright) 100%);
+  border: none;
+  color: #000;
+  width: 42px; height: 42px;
+  border-radius: var(--radius);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: all var(--tr);
+  box-shadow: 0 0 16px rgba(0,212,255,0.2);
+}
+.btn-send:hover:not(:disabled) {
+  background: linear-gradient(135deg, #60F0FF 0%, #C4B5FD 100%);
+  box-shadow: var(--shadow-neon);
+  transform: scale(1.08) translateY(-1px);
+}
+.btn-send:disabled {
+  background: rgba(255,255,255,0.05);
+  color: var(--text-3);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+.btn-send:active:not(:disabled) { transform: scale(0.94); }
+
+
+/* ============================================================
+   12. SIDEBAR OVERLAY (mobile backdrop)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   REPLACE your ".sidebar-overlay" block with this.
+   ============================================================ */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.70);
+  backdrop-filter: blur(6px);
+  z-index: 99;
+}
+.sidebar-overlay.visible { display: block; }
+
+
+/* ============================================================
+   13. TOAST NOTIFICATIONS
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   REPLACE your "TOAST NOTIFICATIONS" section with this.
+   ============================================================ */
+.toast-container {
+  position: fixed;
+  top: 1rem; right: 1rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  pointer-events: none;
+}
+
+.toast {
+  background: linear-gradient(
+    135deg,
+    rgba(10,13,31,0.96) 0%,
+    rgba(8,10,24,0.98) 100%
+  );
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(0,212,255,0.18);
+  border-radius: var(--radius);
+  padding: 0.85rem 1.3rem;
+  font-size: 0.84rem;
+  color: var(--text-1);
+  max-width: 300px;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.6), 0 0 20px rgba(0,212,255,0.06);
+  animation: toastIn 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  pointer-events: all;
+}
+
+.toast.success {
+  border-left: 2px solid var(--neon3);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.6), 0 0 20px rgba(0,255,163,0.08);
+}
+.toast.error {
+  border-left: 2px solid var(--red);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.6), 0 0 20px rgba(255,71,87,0.10);
+}
+.toast.info {
+  border-left: 2px solid var(--neon);
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(24px) scale(0.95); }
+  to   { opacity: 1; transform: translateX(0)    scale(1);    }
+}
+@keyframes toastOut {
+  from { opacity: 1; transform: translateX(0)    scale(1); }
+  to   { opacity: 0; transform: translateX(24px) scale(0.95); }
+}
+
+
+/* ============================================================
+   14. LOADING SPINNER
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   REPLACE your "LOADING STATE" section with this.
+   ============================================================ */
+.loading-spinner {
+  display: inline-block;
+  width: 20px; height: 20px;
+  border: 2px solid rgba(255,255,255,0.08);
+  border-top-color: var(--neon);
+  border-right-color: var(--neon2);
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+  box-shadow: 0 0 10px rgba(0,212,255,0.2);
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+
+/* ============================================================
+   15. RESPONSIVE — MOBILE
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   REPLACE your "@media (max-width: 700px)" block with this.
+   ============================================================ */
+@media (max-width: 700px) {
+  .btn-menu { display: flex; }
+
+  .sidebar {
+    position: fixed;
+    left: 0; top: 0; bottom: 0;
+    z-index: 200;
+    transform: translateX(-100%);
+    box-shadow:
+      8px 0 40px rgba(0,0,0,0.7),
+      0 0 60px rgba(0,212,255,0.05);
+  }
+  .sidebar.mobile-open { transform: translateX(0); }
+
+  .chat-main { width: 100%; }
+  .ch-desc { display: none; }
+  .ch-online-chip { display: none; }
+
+  .emoji-picker {
+    width: calc(100vw - 2.8rem);
+    left: 0.9rem;
+    grid-template-columns: repeat(8, 1fr);
+  }
+
+  .messages-container { padding: 1.2rem 0.9rem 0.5rem; }
+  .input-bar { padding: 0.7rem 0.9rem; }
+}
+
+@media (max-width: 360px) {
+  .emoji-picker { grid-template-columns: repeat(6, 1fr); }
+  .msg-text { font-size: 0.88rem; }
+  .chat-header { padding: 0 0.9rem; }
+}
