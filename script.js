@@ -298,7 +298,7 @@ function renderOnlineUsers(users) {
 
     onlineList.appendChild(el);
   });
-}
+
 
   // ── Mirror users into activity panel ──
   // Reuses already-fetched Firebase data. Zero extra reads.
