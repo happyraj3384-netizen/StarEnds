@@ -121,7 +121,6 @@ const toastContainer  = document.getElementById('toastContainer');
 const menuBtn         = document.getElementById('menuBtn');
 const sidebar         = document.getElementById('sidebar');
 const sidebarOverlay  = document.getElementById('sidebarOverlay');
-const checkoutBtn     = document.getElementById('checkoutBtn');
 
 
 // ============================================================
