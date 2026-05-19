@@ -274,7 +274,64 @@
 
     </main>
     <!-- ---- END MAIN CHAT AREA ---- -->
+<aside class="activity-panel" id="activityPanel">
 
+      <!-- Panel header -->
+      <div class="ap-header">
+        <span class="ap-title">Live Activity</span>
+        <span class="ap-pulse"></span>
+      </div>
+
+      <!-- Active now section -->
+      <div class="ap-section">
+        <div class="ap-label">ACTIVE NOW</div>
+        <div class="ap-online-mirror" id="apOnlineMirror">
+          <!-- Mirrored from onlineList by JS — see script note -->
+        </div>
+      </div>
+
+      <!-- Vibe / atmosphere section -->
+      <div class="ap-section">
+        <div class="ap-label">CHANNEL VIBE</div>
+        <div class="ap-vibe-card">
+          <div class="ap-vibe-icon">⚡</div>
+          <div class="ap-vibe-info">
+            <div class="ap-vibe-name">#general</div>
+            <div class="ap-vibe-status">Live · Open</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sync level section (future-ready UI) -->
+      <div class="ap-section">
+        <div class="ap-label">SYNC LEVEL</div>
+        <div class="ap-sync-bar-wrap">
+          <div class="ap-sync-label">
+            <span>Channel Energy</span>
+            <span class="ap-sync-pct" id="apSyncPct">—</span>
+          </div>
+          <div class="ap-sync-track">
+            <div class="ap-sync-fill" id="apSyncFill"></div>
+          </div>
+        </div>
+        <div class="ap-sync-bar-wrap" style="margin-top: 0.7rem;">
+          <div class="ap-sync-label">
+            <span>Members Online</span>
+            <span class="ap-sync-pct" id="apMemberPct">0</span>
+          </div>
+          <div class="ap-sync-track">
+            <div class="ap-sync-fill ap-sync-fill--violet" id="apMemberFill"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer tagline -->
+      <div class="ap-footer">
+        <span class="ap-footer-text">StarEnds · Real-time</span>
+        <span class="ap-footer-dot"></span>
+      </div>
+
+    </aside>
   </div>
   <!-- ======================== END CHAT APP ======================== -->
 
