@@ -865,7 +865,7 @@ body::after {
   gap: 2px;
   position: relative;
   z-index: 1;
-  scroll-behavior: smooth;
+  
 }
 
 /* System / welcome pill */
