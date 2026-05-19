@@ -300,6 +300,41 @@ function renderOnlineUsers(users) {
   });
 }
 
+  // ── Mirror users into activity panel ──
+  // Reuses already-fetched Firebase data. Zero extra reads.
+  const mirror = document.getElementById('apOnlineMirror');
+  const syncFill = document.getElementById('apSyncFill');
+  const syncPct = document.getElementById('apSyncPct');
+  const memberFill = document.getElementById('apMemberFill');
+  const memberPct = document.getElementById('apMemberPct');
+
+  if (mirror) {
+    mirror.innerHTML = '';
+    users.forEach(function(user) {
+      const isMe = currentUser && user.uid === currentUser.uid;
+      const row = document.createElement('div');
+      row.className = 'ap-user-row';
+      row.innerHTML = `
+        <img class="ap-user-avatar"
+             src="${user.photoURL || generateAvatar(user.name)}"
+             alt="${escapeHTML(user.name)}"
+             onerror="this.src='${generateAvatar(user.name)}'" />
+        <span class="ap-user-name">${escapeHTML(user.name.split(' ')[0])}</span>
+        ${isMe ? '<span class="ap-user-you">you</span>' : ''}
+      `;
+      mirror.appendChild(row);
+    });
+
+    // Update sync bars based on online count
+    const count = users.length;
+    const energyPct = Math.min(100, count * 18);
+    const memberDisplay = count;
+    if (syncFill)  syncFill.style.width  = energyPct + '%';
+    if (syncPct)   syncPct.textContent   = energyPct + '%';
+    if (memberFill) memberFill.style.width = Math.min(100, count * 20) + '%';
+    if (memberPct)  memberPct.textContent  = memberDisplay;
+  }
+}
 
 // ============================================================
 // MESSAGES — LOAD & LISTEN
