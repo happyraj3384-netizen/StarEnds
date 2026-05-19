@@ -412,11 +412,8 @@ function appendMessage(id, data) {
   const timeStr   = msgTime ? formatTime(msgTime) : '';
 
   // Only show delete button on own messages
-  const deleteBtn = isOwn ? `
-<button class="btn-delete-msg" onclick="deleteMessage('${id}')" title="Delete message">
-✕
-</button>
-` : '';
+
+   const deleteBtn = '';
 
   el.innerHTML = `
     <img class="msg-avatar"
