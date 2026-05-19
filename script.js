@@ -436,8 +436,8 @@ function appendMessage(id, data) {
   `;
 
   messagesEl.appendChild(el);
-}
 console.log("appendMessage finished");
+}
 function appendSystemMessage(text) {
   const el = document.createElement('div');
   el.className = 'join-notification';
