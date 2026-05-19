@@ -1370,10 +1370,10 @@ body::after {
 
   .messages-container { padding: 1.2rem 0.9rem 0.5rem; }
   .input-bar { padding: 0.7rem 0.9rem; }
+  .msg-text { max-width: calc(100vw - 100px); }
 }
-
 @media (max-width: 360px) {
   .emoji-picker { grid-template-columns: repeat(6, 1fr); }
-  .msg-text { font-size: 0.88rem; }
+  .msg-text { font-size: 0.88rem; max-width: calc(100vw - 80px); }
   .chat-header { padding: 0 0.9rem; }
 }
