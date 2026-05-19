@@ -121,7 +121,7 @@ const toastContainer  = document.getElementById('toastContainer');
 const menuBtn         = document.getElementById('menuBtn');
 const sidebar         = document.getElementById('sidebar');
 const sidebarOverlay  = document.getElementById('sidebarOverlay');
-
+const scrollBottomBtn = document.getElementById('scrollBottomBtn');
 
 // ============================================================
 // USER COLOR ASSIGNMENT
@@ -647,7 +647,19 @@ function scrollToBottom(force) {
     }, 50);
   }
 }
+messagesEl.addEventListener('scroll', function() {
+  const distFromBottom = messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight;
+  if (distFromBottom > 200) {
+    scrollBottomBtn.classList.add('visible');
+  } else {
+    scrollBottomBtn.classList.remove('visible');
+  }
+});
 
+scrollBottomBtn.addEventListener('click', function() {
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+  scrollBottomBtn.classList.remove('visible');
+});
 
 // ============================================================
 // TOAST NOTIFICATIONS
