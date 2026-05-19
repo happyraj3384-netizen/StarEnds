@@ -451,6 +451,7 @@ function appendSystemMessage(text) {
 // ============================================================
 
 async function sendMessage() {
+   alert("send function working");
   const text = msgInput.value.trim();
   if (!text || !currentUser) return;
 
