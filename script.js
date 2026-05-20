@@ -229,7 +229,7 @@ function showChatApp() {
 function stopListeners() {
   if (unsubMessages) { unsubMessages(); unsubMessages = null; }
   if (unsubOnline)   { unsubOnline();   unsubOnline   = null; }
-}
+
    if (messagesEl) {
     messagesEl.innerHTML = '';
     // Re-add the static welcome pill
