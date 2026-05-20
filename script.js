@@ -84,6 +84,7 @@ import { enableIndexedDbPersistence } from 'https://www.gstatic.com/firebasejs/1
 enableIndexedDbPersistence(db).catch(function(err) {
   // Will fail silently in incognito or if multiple tabs open — that's fine
   console.warn('Offline persistence unavailable:', err.code);
+   });
 // Firestore collection references
 const messagesRef  = collection(db, 'messages');
 const onlineRef    = collection(db, 'onlineUsers');
