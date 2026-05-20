@@ -436,6 +436,7 @@ function appendMessage(id, data) {
   `;
 
   messagesEl.appendChild(el);
+   alert("message appended");
 console.log("appendMessage finished");
 }
 function appendSystemMessage(text) {
