@@ -352,8 +352,9 @@ function loadMessages() {
       if (change.type === 'added') {
         // New message received
         const data = change.doc.data();
-if (!data.timestamp) return;
-
+if (!data.timestamp) {
+   data.timestamp = new Date();
+}
 appendMessage(change.doc.id, data);
 
         // Play notification sound if message is from someone else
