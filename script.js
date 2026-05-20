@@ -445,7 +445,6 @@ if (data.timestamp) {
   `;
 
   messagesEl.appendChild(el);
-   alert("message appended");
 console.log("appendMessage finished");
 }
 function appendSystemMessage(text) {
@@ -469,7 +468,6 @@ async function sendMessage() {
   msgInput.disabled  = true;
 
   try {
-     alert("trying firebase");
     await addDoc(messagesRef, {
       uid:       currentUser.uid,
       name:      currentUser.displayName,
@@ -477,7 +475,6 @@ async function sendMessage() {
       text:      text,
       timestamp: serverTimestamp()
     });
-     alert("firebase success");
 
     msgInput.value = '';
     charCount.textContent = '';
