@@ -351,11 +351,7 @@ function loadMessages() {
     snapshot.docChanges().forEach(function(change) {
       if (change.type === 'added') {
         // New message received
-        const data = change.doc.data();
-if (!data.timestamp) return;
-
-appendMessage(change.doc.id, data);
-
+appendMessage(change.doc.id, change.doc.data());
         // Play notification sound if message is from someone else
         if (change.doc.data().uid !== currentUser?.uid) {
           playNotificationSound();
@@ -416,7 +412,11 @@ function appendMessage(id, data) {
 
   // Only show delete button on own messages
 
-   const deleteBtn = '';
+   const deleteBtn = isOwn ? `
+<button class="btn-delete-msg" onclick="deleteMessage('${id}')" title="Delete message">
+    ×
+</button>
+` : '';
 
   el.innerHTML = `
     <img class="msg-avatar"
@@ -436,7 +436,6 @@ function appendMessage(id, data) {
   `;
 
   messagesEl.appendChild(el);
-console.log("appendMessage finished");
 }
 function appendSystemMessage(text) {
   const el = document.createElement('div');
@@ -451,7 +450,6 @@ function appendSystemMessage(text) {
 // ============================================================
 
 async function sendMessage() {
-   alert("send function working");
   const text = msgInput.value.trim();
   if (!text || !currentUser) return;
 
