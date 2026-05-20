@@ -391,9 +391,15 @@ function appendMessage(id, data) {
   }
 
   const isOwn = currentUser && data.uid === currentUser.uid;
-  const msgTime = data.timestamp?.toDate
-    ? data.timestamp.toDate()
-    : new Date(data.timestamp);
+  let msgTime = null;
+
+if (data.timestamp) {
+  if (typeof data.timestamp.toDate === 'function') {
+    msgTime = data.timestamp.toDate();
+  } else {
+    msgTime = new Date(data.timestamp);
+  }
+}
 
   // Determine if this message should be "compact"
   // (same sender within 3 minutes = no avatar/name repeat)
@@ -455,7 +461,6 @@ function appendSystemMessage(text) {
 // ============================================================
 
 async function sendMessage() {
-   alert("send function working");
   const text = msgInput.value.trim();
   if (!text || !currentUser) return;
 
