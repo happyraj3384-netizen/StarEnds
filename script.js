@@ -472,7 +472,7 @@ async function sendMessage() {
       name:      currentUser.displayName,
       photoURL:  currentUser.photoURL || '',
       text:      text,
-      timestamp: serverTimestamp()
+      timestamp: new date()
     });
 
     msgInput.value = '';
