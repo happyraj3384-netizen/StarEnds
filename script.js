@@ -351,7 +351,6 @@ function loadMessages() {
     snapshot.docChanges().forEach(function(change) {
       if (change.type === 'added') {
          if (document.getElementById('msg-' + change.doc.id)) return;
-         console.log("ADDED EVENT:", change.doc.data());
         // New message received
 appendMessage(change.doc.id, change.doc.data());
         // Play notification sound if message is from someone else
