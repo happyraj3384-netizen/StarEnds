@@ -363,7 +363,7 @@ appendMessage(change.doc.id, change.doc.data());
         // Message was deleted
          const isStillPresent = snapshot.docs.some(d => d.id === change.doc.id);
         const msgEl = document.getElementById('msg-' + change.doc.id);
-        if (msgEl) {
+        if (msgEl && !isStillPresent) {
           msgEl.querySelector('.msg-text').innerHTML = '<em class="msg-deleted">Message deleted</em>';
           msgEl.querySelector('.btn-delete-msg')?.remove();
         }
