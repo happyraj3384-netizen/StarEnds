@@ -350,6 +350,7 @@ function loadMessages() {
   unsubMessages = onSnapshot(q, function(snapshot) {
     snapshot.docChanges().forEach(function(change) {
       if (change.type === 'added') {
+         if (document.getElementById('msg-' + change.doc.id)) return;
         // New message received
 appendMessage(change.doc.id, change.doc.data());
         // Play notification sound if message is from someone else
@@ -399,7 +400,7 @@ function appendMessage(id, data) {
   );
 
   lastSenderId = data.uid;
-  lastMsgTime  = msgTime;
+  lastMsgTime  = msgTime || lastMsgTime;
 
   const colorClass = getUserColor(data.uid);
 
