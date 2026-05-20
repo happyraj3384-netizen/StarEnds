@@ -78,7 +78,12 @@ const firebaseConfig = {
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db   = getFirestore(app);
+import { enableIndexedDbPersistence } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
+// Enable offline persistence — messages work even on flaky connections
+enableIndexedDbPersistence(db).catch(function(err) {
+  // Will fail silently in incognito or if multiple tabs open — that's fine
+  console.warn('Offline persistence unavailable:', err.code);
 // Firestore collection references
 const messagesRef  = collection(db, 'messages');
 const onlineRef    = collection(db, 'onlineUsers');
@@ -144,15 +149,15 @@ function getUserColor(uid) {
 // Listen for auth state changes (login / logout)
 onAuthStateChanged(auth, function(user) {
   if (user) {
-    // User is signed in
     currentUser = user;
-    showChatApp();
-    setUserOnline();
-    loadMessages();
-    subscribeOnlineUsers();
-    showToast(`Welcome back, ${user.displayName.split(' ')[0]}! 👋`, 'success');
+    requestAnimationFrame(function() {
+      showChatApp();
+      setUserOnline();
+      loadMessages();
+      subscribeOnlineUsers();
+      showToast(`Welcome back, ${user.displayName.split(' ')[0]}! 👋`, 'success');
+    });
   } else {
-    // User signed out
     currentUser = null;
     showLoginScreen();
     stopListeners();
@@ -224,6 +229,14 @@ function stopListeners() {
   if (unsubMessages) { unsubMessages(); unsubMessages = null; }
   if (unsubOnline)   { unsubOnline();   unsubOnline   = null; }
 }
+   if (messagesEl) {
+    messagesEl.innerHTML = '';
+    // Re-add the static welcome pill
+    messagesEl.innerHTML = '<div class="system-message" id="welcomeMsg">⚡ Welcome to <strong>#general</strong> — StarEnds is live. Say something!</div>';
+  }
+  lastSenderId = null;
+  lastMsgTime  = null;
+}
 
 
 // ============================================================
@@ -234,6 +247,10 @@ function stopListeners() {
 async function setUserOnline() {
   if (!currentUser) return;
   try {
+    // Check if already marked online — prevents duplicate join messages on re-auth
+    const existingDoc = await getDoc(doc(onlineRef, currentUser.uid));
+    const alreadyOnline = existingDoc.exists();
+
     await setDoc(doc(onlineRef, currentUser.uid), {
       uid:       currentUser.uid,
       name:      currentUser.displayName,
@@ -242,11 +259,12 @@ async function setUserOnline() {
       isOnline:  true
     });
 
-    // Announce join to chat
-    await addSystemMessage(`${currentUser.displayName.split(' ')[0]} joined the chat 👋`);
+    // Only announce join if this is a fresh session
+    if (!alreadyOnline) {
+      await addSystemMessage(`${currentUser.displayName.split(' ')[0]} joined the chat 👋`);
+    }
 
-    // Auto remove when tab closes
-    window.addEventListener('beforeunload', setUserOffline);
+    window.addEventListener('beforeunload', setUserOffline, { once: true });
   } catch (e) {
     console.error('Error setting online status:', e);
   }
@@ -262,6 +280,7 @@ async function setUserOffline() {
 }
 
 function subscribeOnlineUsers() {
+   if (unsubOnline) { unsubOnline(); unsubOnline = null; }
   unsubOnline = onSnapshot(collection(db, 'onlineUsers'), function(snapshot) {
     const users = [];
     snapshot.forEach(function(d) { users.push(d.data()); });
@@ -342,6 +361,7 @@ function renderOnlineUsers(users) {
 
 function loadMessages() {
   // Query last 100 messages, ordered by timestamp
+   if (unsubMessages) { unsubMessages(); unsubMessages = null; }
   const q = query(messagesRef, orderBy('timestamp', 'asc'), limit(100));
 
   lastSenderId = null;
@@ -364,7 +384,8 @@ appendMessage(change.doc.id, change.doc.data());
          const isStillPresent = snapshot.docs.some(d => d.id === change.doc.id);
         const msgEl = document.getElementById('msg-' + change.doc.id);
         if (msgEl && !isStillPresent) {
-          msgEl.querySelector('.msg-text').innerHTML = '<em class="msg-deleted">Message deleted</em>';
+          const msgText = msgEl.querySelector('.msg-text');
+          if (msgText) msgText.innerHTML = '<em class="msg-deleted">Message deleted</em>';
           msgEl.querySelector('.btn-delete-msg')?.remove();
         }
       }
@@ -533,7 +554,7 @@ async function addSystemMessage(text) {
     await addDoc(messagesRef, {
       type:      'system',
       text:      text,
-      timestamp: serverTimestamp()
+      timestamp: new Date()
     });
   } catch (e) {
     console.error('System msg error:', e);
