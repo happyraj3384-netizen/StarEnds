@@ -361,6 +361,7 @@ appendMessage(change.doc.id, change.doc.data());
 
       if (change.type === 'removed') {
         // Message was deleted
+         const isStillPresent = snapshot.docs.some(d => d.id === change.doc.id);
         const msgEl = document.getElementById('msg-' + change.doc.id);
         if (msgEl) {
           msgEl.querySelector('.msg-text').innerHTML = '<em class="msg-deleted">Message deleted</em>';
@@ -472,7 +473,7 @@ async function sendMessage() {
       name:      currentUser.displayName,
       photoURL:  currentUser.photoURL || '',
       text:      text,
-      timestamp: new date()
+      timestamp: new Date()
     });
 
     msgInput.value = '';
