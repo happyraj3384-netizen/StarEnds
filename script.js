@@ -63,7 +63,7 @@ const firebaseConfig = {
 // Initialize Firebase
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-
+import { initializeFirestore, CACHE_SIZE_UNLIMITED } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 const db = initializeFirestore(app, {
   experimentalForceLongPolling: true,   // fixes WebChannel errors on mobile networks
   useFetchStreams: false
