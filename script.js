@@ -30,6 +30,7 @@ import {
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import {
   getFirestore,
+  initializeFirestore,
   collection,
   addDoc,
   deleteDoc,
@@ -61,7 +62,12 @@ const firebaseConfig = {
 // Initialize Firebase
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db   = getFirestore(app);
+import { initializeFirestore, CACHE_SIZE_UNLIMITED } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+const db = initializeFirestore(app, {
+  experimentalForceLongPolling: true,   // fixes WebChannel errors on mobile networks
+  useFetchStreams: false
+});
 // FIX #2 + #3: Removed illegal mid-file import and deprecated
 // enableIndexedDbPersistence call. getFirestore() is sufficient.
 
@@ -109,7 +115,6 @@ const sidebarOverlay  = document.getElementById('sidebarOverlay');
 const scrollBottomBtn = document.getElementById('scrollBottomBtn');
 // ADD THIS — show loading overlay until auth resolves
 chatApp.style.display    = 'none';
-loginScreen.style.display = 'none';
 
 // ============================================================
 // USER COLOR ASSIGNMENT
