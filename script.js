@@ -135,6 +135,7 @@ onAuthStateChanged(auth, function(user) {
 
   if (user) {
     currentUser = user;
+    window._currentUser = user;
     showChatApp();
     setUserOnline();
     loadMessages();
