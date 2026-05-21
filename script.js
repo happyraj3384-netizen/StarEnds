@@ -107,7 +107,9 @@ const menuBtn         = document.getElementById('menuBtn');
 const sidebar         = document.getElementById('sidebar');
 const sidebarOverlay  = document.getElementById('sidebarOverlay');
 const scrollBottomBtn = document.getElementById('scrollBottomBtn');
-
+// ADD THIS — show loading overlay until auth resolves
+chatApp.style.display    = 'none';
+loginScreen.style.display = 'none';
 
 // ============================================================
 // USER COLOR ASSIGNMENT
@@ -127,6 +129,10 @@ function getUserColor(uid) {
 
 // FIX #4: Removed requestAnimationFrame wrapper — unnecessary delay
 onAuthStateChanged(auth, function(user) {
+  // Hide loading screen on first auth resolution
+  const loadingEl = document.getElementById('authLoading');
+  if (loadingEl) loadingEl.remove();
+
   if (user) {
     currentUser = user;
     showChatApp();
@@ -443,9 +449,14 @@ function appendSystemMessage(text) {
 // SEND MESSAGE
 // ============================================================
 
+// AFTER
 async function sendMessage() {
   const text = msgInput.value.trim();
-  if (!text || !currentUser) return;
+  if (!text) return;
+  if (!currentUser) {
+    showToast('Not signed in. Please reload and log in again.', 'error');
+    return;
+  }
 
   sendBtn.disabled  = true;
   msgInput.disabled = true;
