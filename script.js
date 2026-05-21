@@ -31,7 +31,6 @@ import {
 import {
   getFirestore,
   initializeFirestore,
-  CACHE_SIZE_UNLIMITED,
   collection,
   addDoc,
   deleteDoc,
