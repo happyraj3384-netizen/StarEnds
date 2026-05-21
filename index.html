@@ -90,6 +90,14 @@
     Shown when user is not logged in.
     Hidden by JS once Firebase Auth confirms sign-in.
   -->
+  <!-- ADD after <body> tag -->
+<div id="authLoading" style="
+  position:fixed; inset:0; background:#0a0d1f;
+  display:flex; align-items:center; justify-content:center;
+  z-index:9999; color:#00e5ff; font-family:sans-serif; font-size:1.1rem;
+">
+  ⚡ Connecting...
+</div>
   <div class="login-screen" id="loginScreen">
 
     <!-- Animated background particles -->
