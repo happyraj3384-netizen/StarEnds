@@ -342,33 +342,38 @@ function loadMessages() {
   lastSenderId = null;
   lastMsgTime  = null;
 
-  unsubMessages = onSnapshot(q, function(snapshot) {
-    snapshot.docChanges().forEach(function(change) {
+  // AFTER
+  unsubMessages = onSnapshot(q,
+    function(snapshot) {
+      snapshot.docChanges().forEach(function(change) {
 
-      if (change.type === 'added') {
-        // Guard: skip if already in DOM (prevents double-render on re-sorts)
-        if (document.getElementById('msg-' + change.doc.id)) return;
-        appendMessage(change.doc.id, change.doc.data());
-        if (change.doc.data().uid !== currentUser?.uid) {
-          playNotificationSound();
+        if (change.type === 'added') {
+          if (document.getElementById('msg-' + change.doc.id)) return;
+          appendMessage(change.doc.id, change.doc.data());
+          if (change.doc.data().uid !== currentUser?.uid) {
+            playNotificationSound();
+          }
         }
-      }
 
-      if (change.type === 'removed') {
-        // Only mark deleted if truly gone — not just re-sorted by Firestore
-        const isStillPresent = snapshot.docs.some(d => d.id === change.doc.id);
-        const msgEl = document.getElementById('msg-' + change.doc.id);
-        if (msgEl && !isStillPresent) {
-          const msgText = msgEl.querySelector('.msg-text');
-          if (msgText) msgText.innerHTML = '<em class="msg-deleted">Message deleted</em>';
-          msgEl.querySelector('.btn-delete-msg')?.remove();
+        if (change.type === 'removed') {
+          const isStillPresent = snapshot.docs.some(d => d.id === change.doc.id);
+          const msgEl = document.getElementById('msg-' + change.doc.id);
+          if (msgEl && !isStillPresent) {
+            const msgText = msgEl.querySelector('.msg-text');
+            if (msgText) msgText.innerHTML = '<em class="msg-deleted">Message deleted</em>';
+            msgEl.querySelector('.btn-delete-msg')?.remove();
+          }
         }
-      }
 
-    });
-
-    scrollToBottom();
-  });
+      });
+      scrollToBottom();
+    },
+    function(error) {
+      // This now shows the REAL error in console
+      console.error('Snapshot listener error:', error.code, error.message);
+      showToast('Chat connection error: ' + error.code, 'error');
+    }
+  ); ini
 }
 
 
