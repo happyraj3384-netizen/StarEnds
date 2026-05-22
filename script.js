@@ -337,7 +337,8 @@ function loadMessages() {
   // Unsubscribe existing listener before creating new one
   // Prevents duplicate listeners if onAuthStateChanged fires twice
   if (unsubMessages) { unsubMessages(); unsubMessages = null; }
-
+   
+   const q = query(messagesRef, limit(20));
   lastSenderId = null;
   lastMsgTime  = null;
 
