@@ -373,7 +373,7 @@ function loadMessages() {
       console.error('Snapshot listener error:', error.code, error.message);
       showToast('Chat connection error: ' + error.code, 'error');
     }
-  ); ini
+  );
 }
 
 
