@@ -398,25 +398,25 @@ async function startPolling() {
 
   console.log('Polling mode active');
 
+  async function startPolling() {
+  if (unsubMessages) { unsubMessages(); unsubMessages = null; }
+  if (window._pollInterval) return;
+
+  console.log('Polling mode active');
+
   async function poll() {
     if (!currentUser) return;
     try {
-      const { getDocs } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
-      const q = _lastPollTimestamp
-        ? query(messagesRef, orderBy('timestamp', 'asc'), limit(30))
-        : query(messagesRef, orderBy('timestamp', 'asc'), limit(100));
-
+      // getDocs is already imported at top — no dynamic import needed
+      const q = query(messagesRef, orderBy('timestamp', 'asc'), limit(100));
       const snapshot = await getDocs(q);
+
       snapshot.forEach(function(docSnap) {
+        // Only append messages not already in the DOM
         if (!document.getElementById('msg-' + docSnap.id)) {
           appendMessage(docSnap.id, docSnap.data());
         }
       });
-
-      if (!snapshot.empty) {
-        const docs = snapshot.docs;
-        _lastPollTimestamp = docs[docs.length - 1].data().timestamp;
-      }
 
       scrollToBottom();
     } catch (e) {
@@ -424,7 +424,6 @@ async function startPolling() {
     }
   }
 
-  // Poll immediately, then every 4 seconds
   await poll();
   window._pollInterval = setInterval(poll, 4000);
 }
