@@ -391,7 +391,7 @@ function loadMessages() {
 // Works on networks that block persistent connections
 let _lastPollTimestamp = null;
 
-  async function startPolling() {
+async function startPolling() {
   if (unsubMessages) { unsubMessages(); unsubMessages = null; }
   if (window._pollInterval) return;
 
@@ -420,7 +420,6 @@ let _lastPollTimestamp = null;
   await poll();
   window._pollInterval = setInterval(poll, 4000);
 }
-
 // ============================================================
 // RENDER A MESSAGE
 // FIX #1: appendMessage function brace structure fully corrected.
