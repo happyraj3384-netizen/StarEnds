@@ -338,7 +338,6 @@ function loadMessages() {
   // Prevents duplicate listeners if onAuthStateChanged fires twice
   if (unsubMessages) { unsubMessages(); unsubMessages = null; }
 
-  const q = query(messagesRef, orderBy('timestamp', 'asc'), limit(100));
   lastSenderId = null;
   lastMsgTime  = null;
 
