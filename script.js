@@ -391,13 +391,6 @@ function loadMessages() {
 // Works on networks that block persistent connections
 let _lastPollTimestamp = null;
 
-async function startPolling() {
-  // Unsubscribe the broken snapshot listener
-  if (unsubMessages) { unsubMessages(); unsubMessages = null; }
-  if (window._pollInterval) return; // already polling
-
-  console.log('Polling mode active');
-
   async function startPolling() {
   if (unsubMessages) { unsubMessages(); unsubMessages = null; }
   if (window._pollInterval) return;
