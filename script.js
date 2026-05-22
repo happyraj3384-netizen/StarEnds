@@ -44,7 +44,8 @@ import {
   setDoc,
   deleteField,
   updateDoc,
-  getDoc
+  getDoc,
+  getDocs
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
 // ============================================================
@@ -214,6 +215,7 @@ function showChatApp() {
 function stopListeners() {
   if (unsubMessages) { unsubMessages(); unsubMessages = null; }
   if (unsubOnline)   { unsubOnline();   unsubOnline   = null; }
+  if (window._pollInterval) { clearInterval(window._pollInterval); window._pollInterval = null; }
 
   // Clear rendered messages so re-login loads fresh
   if (messagesEl) {
@@ -333,20 +335,24 @@ function renderOnlineUsers(users) {
 // MESSAGES — LOAD & LISTEN
 // ============================================================
 
+// AFTER — polling fallback that works on any network
 function loadMessages() {
-  // Unsubscribe existing listener before creating new one
-  // Prevents duplicate listeners if onAuthStateChanged fires twice
+  // Clear any existing listener or poll interval
   if (unsubMessages) { unsubMessages(); unsubMessages = null; }
-   
-   const q = query(messagesRef, limit(20));
+  if (window._pollInterval) { clearInterval(window._pollInterval); }
+
   lastSenderId = null;
   lastMsgTime  = null;
 
-  // AFTER
+  // Try onSnapshot first
+  let snapshotWorking = false;
+  const q = query(messagesRef, orderBy('timestamp', 'asc'), limit(100));
+
   unsubMessages = onSnapshot(q,
     function(snapshot) {
-      snapshot.docChanges().forEach(function(change) {
+      snapshotWorking = true;
 
+      snapshot.docChanges().forEach(function(change) {
         if (change.type === 'added') {
           if (document.getElementById('msg-' + change.doc.id)) return;
           appendMessage(change.doc.id, change.doc.data());
@@ -354,7 +360,6 @@ function loadMessages() {
             playNotificationSound();
           }
         }
-
         if (change.type === 'removed') {
           const isStillPresent = snapshot.docs.some(d => d.id === change.doc.id);
           const msgEl = document.getElementById('msg-' + change.doc.id);
@@ -364,18 +369,65 @@ function loadMessages() {
             msgEl.querySelector('.btn-delete-msg')?.remove();
           }
         }
-
       });
       scrollToBottom();
     },
     function(error) {
-      // This now shows the REAL error in console
-      console.error('Snapshot listener error:', error.code, error.message);
-      showToast('Chat connection error: ' + error.code, 'error');
+      console.error('Snapshot error:', error.code, error.message);
+      startPolling(); // fallback to polling on listener error
     }
   );
+
+  // If snapshot gets no data within 8 seconds, start polling as fallback
+  setTimeout(function() {
+    if (!snapshotWorking) {
+      console.warn('Snapshot not responding — switching to polling mode');
+      startPolling();
+    }
+  }, 8000);
 }
 
+// Polling fallback — fetches new messages every 4 seconds
+// Works on networks that block persistent connections
+let _lastPollTimestamp = null;
+
+async function startPolling() {
+  // Unsubscribe the broken snapshot listener
+  if (unsubMessages) { unsubMessages(); unsubMessages = null; }
+  if (window._pollInterval) return; // already polling
+
+  console.log('Polling mode active');
+
+  async function poll() {
+    if (!currentUser) return;
+    try {
+      const { getDocs } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+      const q = _lastPollTimestamp
+        ? query(messagesRef, orderBy('timestamp', 'asc'), limit(30))
+        : query(messagesRef, orderBy('timestamp', 'asc'), limit(100));
+
+      const snapshot = await getDocs(q);
+      snapshot.forEach(function(docSnap) {
+        if (!document.getElementById('msg-' + docSnap.id)) {
+          appendMessage(docSnap.id, docSnap.data());
+        }
+      });
+
+      if (!snapshot.empty) {
+        const docs = snapshot.docs;
+        _lastPollTimestamp = docs[docs.length - 1].data().timestamp;
+      }
+
+      scrollToBottom();
+    } catch (e) {
+      console.error('Poll error:', e);
+    }
+  }
+
+  // Poll immediately, then every 4 seconds
+  await poll();
+  window._pollInterval = setInterval(poll, 4000);
+}
 
 // ============================================================
 // RENDER A MESSAGE
