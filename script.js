@@ -335,23 +335,20 @@ function renderOnlineUsers(users) {
 // MESSAGES — LOAD & LISTEN
 // ============================================================
 
-// AFTER — polling fallback that works on any network
 function loadMessages() {
-  // Clear any existing listener or poll interval
   if (unsubMessages) { unsubMessages(); unsubMessages = null; }
-  if (window._pollInterval) { clearInterval(window._pollInterval); }
+  if (window._pollInterval) { clearInterval(window._pollInterval); window._pollInterval = null; }
 
   lastSenderId = null;
   lastMsgTime  = null;
 
-  // Try onSnapshot first
-  let snapshotWorking = false;
+  let snapshotFired = false;
   const q = query(messagesRef, orderBy('timestamp', 'asc'), limit(100));
 
-  unsubMessages = onSnapshot(q,
+  unsubMessages = onSnapshot(
+    q,
     function(snapshot) {
-      snapshotWorking = true;
-
+      snapshotFired = true;
       snapshot.docChanges().forEach(function(change) {
         if (change.type === 'added') {
           if (document.getElementById('msg-' + change.doc.id)) return;
@@ -361,7 +358,7 @@ function loadMessages() {
           }
         }
         if (change.type === 'removed') {
-          const isStillPresent = snapshot.docs.some(d => d.id === change.doc.id);
+          const isStillPresent = snapshot.docs.some(function(d) { return d.id === change.doc.id; });
           const msgEl = document.getElementById('msg-' + change.doc.id);
           if (msgEl && !isStillPresent) {
             const msgText = msgEl.querySelector('.msg-text');
@@ -373,44 +370,34 @@ function loadMessages() {
       scrollToBottom();
     },
     function(error) {
-      console.error('Snapshot error:', error.code, error.message);
-      startPolling(); // fallback to polling on listener error
+      console.error('onSnapshot failed:', error.code, error.message);
+      if (unsubMessages) { unsubMessages(); unsubMessages = null; }
+      startPolling();
     }
   );
 
-  // If snapshot gets no data within 8 seconds, start polling as fallback
   setTimeout(function() {
-    if (!snapshotWorking) {
-      console.warn('Snapshot not responding — switching to polling mode');
+    if (!snapshotFired) {
+      console.warn('onSnapshot timeout — starting poll fallback');
+      if (unsubMessages) { unsubMessages(); unsubMessages = null; }
       startPolling();
     }
   }, 8000);
 }
 
-// Polling fallback — fetches new messages every 4 seconds
-// Works on networks that block persistent connections
-let _lastPollTimestamp = null;
-
 async function startPolling() {
-  if (unsubMessages) { unsubMessages(); unsubMessages = null; }
-  if (window._pollInterval) return;
-
-  console.log('Polling mode active');
+  if (window._pollInterval) { clearInterval(window._pollInterval); window._pollInterval = null; }
 
   async function poll() {
     if (!currentUser) return;
     try {
-      // getDocs is already imported at top — no dynamic import needed
       const q = query(messagesRef, orderBy('timestamp', 'asc'), limit(100));
       const snapshot = await getDocs(q);
-
       snapshot.forEach(function(docSnap) {
-        // Only append messages not already in the DOM
         if (!document.getElementById('msg-' + docSnap.id)) {
           appendMessage(docSnap.id, docSnap.data());
         }
       });
-
       scrollToBottom();
     } catch (e) {
       console.error('Poll error:', e);
