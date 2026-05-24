@@ -215,16 +215,14 @@ function showChatApp() {
 function stopListeners() {
   if (unsubMessages) { unsubMessages(); unsubMessages = null; }
   if (unsubOnline)   { unsubOnline();   unsubOnline   = null; }
-  if (window._pollInterval) { clearInterval(window._pollInterval); window._pollInterval = null; }
-
-  // Clear rendered messages so re-login loads fresh
+  if (window._pollInterval)      { clearInterval(window._pollInterval);      window._pollInterval      = null; }
+  if (window._snapshotWatchdog)  { clearInterval(window._snapshotWatchdog);  window._snapshotWatchdog  = null; }
   if (messagesEl) {
     messagesEl.innerHTML = '<div class="system-message" id="welcomeMsg">⚡ Welcome to <strong>#general</strong> — StarEnds is live. Say something!</div>';
   }
   lastSenderId = null;
   lastMsgTime  = null;
 }
-
 
 // ============================================================
 // ONLINE PRESENCE
@@ -338,17 +336,22 @@ function renderOnlineUsers(users) {
 function loadMessages() {
   if (unsubMessages) { unsubMessages(); unsubMessages = null; }
   if (window._pollInterval) { clearInterval(window._pollInterval); window._pollInterval = null; }
+  if (window._snapshotWatchdog) { clearInterval(window._snapshotWatchdog); window._snapshotWatchdog = null; }
 
   lastSenderId = null;
   lastMsgTime  = null;
 
-  let snapshotFired = false;
+  let snapshotFired  = false;
+  let lastSnapshotAt = Date.now();
+
   const q = query(messagesRef, orderBy('timestamp', 'asc'), limit(100));
 
   unsubMessages = onSnapshot(
     q,
     function(snapshot) {
-      snapshotFired = true;
+      snapshotFired  = true;
+      lastSnapshotAt = Date.now();
+
       snapshot.docChanges().forEach(function(change) {
         if (change.type === 'added') {
           if (document.getElementById('msg-' + change.doc.id)) return;
@@ -372,17 +375,30 @@ function loadMessages() {
     function(error) {
       console.error('onSnapshot failed:', error.code, error.message);
       if (unsubMessages) { unsubMessages(); unsubMessages = null; }
+      if (window._snapshotWatchdog) { clearInterval(window._snapshotWatchdog); window._snapshotWatchdog = null; }
       startPolling();
     }
   );
 
-  setTimeout(function() {
-    if (!snapshotFired) {
-      console.warn('onSnapshot timeout — starting poll fallback');
+  // Watchdog: if snapshot stops firing for 20 seconds, switch to polling
+  window._snapshotWatchdog = setInterval(function() {
+    if (!currentUser) return;
+    const silentFor = Date.now() - lastSnapshotAt;
+    if (snapshotFired && silentFor > 20000) {
+      console.warn('Snapshot silent for 20s — switching to polling');
       if (unsubMessages) { unsubMessages(); unsubMessages = null; }
+      clearInterval(window._snapshotWatchdog);
+      window._snapshotWatchdog = null;
       startPolling();
     }
-  }, 8000);
+    if (!snapshotFired && silentFor > 8000) {
+      console.warn('Snapshot never fired — switching to polling');
+      if (unsubMessages) { unsubMessages(); unsubMessages = null; }
+      clearInterval(window._snapshotWatchdog);
+      window._snapshotWatchdog = null;
+      startPolling();
+    }
+  }, 5000);
 }
 
 async function startPolling() {
@@ -392,8 +408,8 @@ async function startPolling() {
     if (!currentUser) return;
     try {
       const q = query(messagesRef, orderBy('timestamp', 'asc'), limit(100));
-      const snapshot = await getDocs(q);
-      snapshot.forEach(function(docSnap) {
+      const snap = await getDocs(q);
+      snap.forEach(function(docSnap) {
         if (!document.getElementById('msg-' + docSnap.id)) {
           appendMessage(docSnap.id, docSnap.data());
         }
@@ -405,7 +421,7 @@ async function startPolling() {
   }
 
   await poll();
-  window._pollInterval = setInterval(poll, 4000);
+  window._pollInterval = setInterval(poll, 5000);
 }
 // ============================================================
 // RENDER A MESSAGE
@@ -556,9 +572,11 @@ window.deleteMessage = async function(msgId) {
 // ============================================================
 
 async function addSystemMessage(text) {
+  if (!currentUser) return;
   try {
     await addDoc(messagesRef, {
       type:      'system',
+      uid:       currentUser.uid,
       text:      text,
       timestamp: new Date()
     });
@@ -566,7 +584,6 @@ async function addSystemMessage(text) {
     console.error('System msg error:', e);
   }
 }
-
 
 // ============================================================
 // INPUT BEHAVIOR — character count + send button enable
