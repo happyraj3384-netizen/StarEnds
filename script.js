@@ -1,5 +1,5 @@
 /* ============================================================
-   NEONCHAT — script.js
+   StarEnds â€” script.js
    Real-time group chat using Firebase v9 (Modular SDK)
 
    This file handles:
@@ -18,7 +18,7 @@
 
 // ============================================================
 // FIREBASE SDK IMPORTS
-// Using v9 modular SDK — works with CDN type="module"
+// ALL imports must be at the top â€” ES module rule
 // ============================================================
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
 import {
@@ -30,6 +30,8 @@ import {
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import {
   getFirestore,
+  initializeFirestore,
+  CACHE_SIZE_UNLIMITED,
   collection,
   addDoc,
   deleteDoc,
@@ -42,61 +44,52 @@ import {
   setDoc,
   deleteField,
   updateDoc,
-  getDoc
+  getDoc,
+  getDocs
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
-
 // ============================================================
-// FIREBASE CONFIG
-// ============================================================
-// STEP 1: Replace this entire firebaseConfig object with YOUR config.
-// Get it from: Firebase Console → Project Settings → Your Apps → Web App
-//
-// It looks like this — replace every value:
-//
-// const firebaseConfig = {
-//   apiKey: "AIzaSy...",
-//   authDomain: "yourproject.firebaseapp.com",
-//   projectId: "yourproject",
-//   storageBucket: "yourproject.appspot.com",
-//   messagingSenderId: "123456789",
-//   appId: "1:123456789:web:abcdef"
-// };
+// FIREBASE CONFIG â€” Replace with your own from Firebase Console
 // ============================================================
 const firebaseConfig = {
-  apiKey:            "PASTE_YOUR_API_KEY_HERE",
-  authDomain:        "PASTE_YOUR_AUTH_DOMAIN_HERE",
-  projectId:         "PASTE_YOUR_PROJECT_ID_HERE",
-  storageBucket:     "PASTE_YOUR_STORAGE_BUCKET_HERE",
-  messagingSenderId: "PASTE_YOUR_SENDER_ID_HERE",
-  appId:             "PASTE_YOUR_APP_ID_HERE"
+  apiKey: "AIzaSyAP1Ich02VnXy6E9n28LZVqhBRFp6eFisA",
+  authDomain: "starends-eb7cd.firebaseapp.com",
+  projectId: "starends-eb7cd",
+  storageBucket: "starends-eb7cd.firebasestorage.app",
+  messagingSenderId: "385951624269",
+  appId: "1:385951624269:web:d4baeec936dfa2fa370004",
+  measurementId: "G-WLRJGNK00V"
 };
 
 // Initialize Firebase
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db   = getFirestore(app);
+const db = initializeFirestore(app, {
+  experimentalForceLongPolling: true,   // fixes WebChannel errors on mobile networks
+  useFetchStreams: false
+});
+// FIX #2 + #3: Removed illegal mid-file import and deprecated
+// enableIndexedDbPersistence call. getFirestore() is sufficient.
 
 // Firestore collection references
-const messagesRef  = collection(db, 'messages');
-const onlineRef    = collection(db, 'onlineUsers');
+const messagesRef = collection(db, 'messages');
+const onlineRef   = collection(db, 'onlineUsers');
 
 
 // ============================================================
 // APP STATE
 // ============================================================
-let currentUser   = null;         // Logged-in Firebase User object
-let unsubMessages = null;         // Unsubscribe function for message listener
-let unsubOnline   = null;         // Unsubscribe function for online users
-let typingTimeout = null;         // Debounce timer for typing indicator
-let isTyping      = false;        // Whether current user is typing
-let lastSenderId  = null;         // For grouping consecutive messages
-let lastMsgTime   = null;         // For grouping messages within 3 minutes
+let currentUser   = null;
+let unsubMessages = null;
+let unsubOnline   = null;
+let typingTimeout = null;
+let isTyping      = false;
+let lastSenderId  = null;
+let lastMsgTime   = null;
 
 
 // ============================================================
-// DOM ELEMENTS
-// Cache them once on load for performance
+// DOM ELEMENTS â€” cached once on load
 // ============================================================
 const loginScreen     = document.getElementById('loginScreen');
 const chatApp         = document.getElementById('chatApp');
@@ -119,17 +112,16 @@ const toastContainer  = document.getElementById('toastContainer');
 const menuBtn         = document.getElementById('menuBtn');
 const sidebar         = document.getElementById('sidebar');
 const sidebarOverlay  = document.getElementById('sidebarOverlay');
-const checkoutBtn     = document.getElementById('checkoutBtn');
-
+const scrollBottomBtn = document.getElementById('scrollBottomBtn');
+// ADD THIS â€” show loading overlay until auth resolves
+chatApp.style.display    = 'none';
 
 // ============================================================
 // USER COLOR ASSIGNMENT
-// Each user gets a consistent color based on their UID
 // ============================================================
 const USER_COLORS = ['color-1', 'color-2', 'color-3', 'color-4', 'color-5', 'color-6'];
 
 function getUserColor(uid) {
-  // Simple hash: sum char codes → modulo number of colors
   let sum = 0;
   for (let i = 0; i < uid.length; i++) sum += uid.charCodeAt(i);
   return USER_COLORS[sum % USER_COLORS.length];
@@ -140,18 +132,21 @@ function getUserColor(uid) {
 // FIREBASE AUTHENTICATION
 // ============================================================
 
-// Listen for auth state changes (login / logout)
+// FIX #4: Removed requestAnimationFrame wrapper â€” unnecessary delay
 onAuthStateChanged(auth, function(user) {
+  // Hide loading screen on first auth resolution
+  const loadingEl = document.getElementById('authLoading');
+  if (loadingEl) loadingEl.remove();
+
   if (user) {
-    // User is signed in
     currentUser = user;
+    window._currentUser = user;
     showChatApp();
     setUserOnline();
     loadMessages();
     subscribeOnlineUsers();
-    showToast(`Welcome back, ${user.displayName.split(' ')[0]}! 👋`, 'success');
+    showToast(`Welcome back, ${user.displayName.split(' ')[0]}! ðŸ‘‹`, 'success');
   } else {
-    // User signed out
     currentUser = null;
     showLoginScreen();
     stopListeners();
@@ -165,10 +160,10 @@ googleLoginBtn.addEventListener('click', async function() {
     googleLoginBtn.disabled = true;
 
     const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: 'select_account' }); // Always show account picker
+    provider.setCustomParameters({ prompt: 'select_account' });
 
     await signInWithPopup(auth, provider);
-    // onAuthStateChanged will handle the rest
+    // onAuthStateChanged handles the rest
 
   } catch (error) {
     console.error('Login error:', error);
@@ -191,9 +186,9 @@ googleLoginBtn.addEventListener('click', async function() {
 logoutBtn.addEventListener('click', async function() {
   if (!confirm('Are you sure you want to sign out?')) return;
   try {
-    await setUserOffline();  // Remove from online list first
+    await setUserOffline();
     await signOut(auth);
-    showToast('Signed out. See you soon! 👋', 'info');
+    showToast('Signed out. See you soon! ðŸ‘‹', 'info');
   } catch (e) {
     console.error('Logout error:', e);
   }
@@ -205,47 +200,55 @@ logoutBtn.addEventListener('click', async function() {
 // ============================================================
 
 function showLoginScreen() {
-  loginScreen.style.display  = 'flex';
-  chatApp.style.display       = 'none';
-  createParticles();          // Animate background particles
+  loginScreen.style.display = 'flex';
+  chatApp.style.display     = 'none';
+  createParticles();
 }
 
 function showChatApp() {
-  loginScreen.style.display   = 'none';
-  chatApp.style.display        = 'flex';
-
-  // Update sidebar user info
-  sfAvatar.src          = currentUser.photoURL || generateAvatar(currentUser.displayName);
-  sfName.textContent    = currentUser.displayName || 'Anonymous';
+  loginScreen.style.display = 'none';
+  chatApp.style.display     = 'flex';
+  sfAvatar.src              = currentUser.photoURL || generateAvatar(currentUser.displayName);
+  sfName.textContent        = currentUser.displayName || 'Anonymous';
 }
 
 function stopListeners() {
   if (unsubMessages) { unsubMessages(); unsubMessages = null; }
   if (unsubOnline)   { unsubOnline();   unsubOnline   = null; }
+  if (window._pollInterval)      { clearInterval(window._pollInterval);      window._pollInterval      = null; }
+  if (window._snapshotWatchdog)  { clearInterval(window._snapshotWatchdog);  window._snapshotWatchdog  = null; }
+  if (messagesEl) {
+    messagesEl.innerHTML = '<div class="system-message" id="welcomeMsg">âš¡ Welcome to <strong>#general</strong> â€” StarEnds is live. Say something!</div>';
+  }
+  lastSenderId = null;
+  lastMsgTime  = null;
 }
-
 
 // ============================================================
 // ONLINE PRESENCE
-// Tracks who is currently in the chat room
 // ============================================================
 
 async function setUserOnline() {
   if (!currentUser) return;
   try {
+    // Check if already online â€” prevents duplicate join messages on re-auth
+    const existingDoc  = await getDoc(doc(onlineRef, currentUser.uid));
+    const alreadyOnline = existingDoc.exists();
+
     await setDoc(doc(onlineRef, currentUser.uid), {
-      uid:       currentUser.uid,
-      name:      currentUser.displayName,
-      photoURL:  currentUser.photoURL || '',
-      joinedAt:  serverTimestamp(),
-      isOnline:  true
+      uid:      currentUser.uid,
+      name:     currentUser.displayName,
+      photoURL: currentUser.photoURL || '',
+      joinedAt: serverTimestamp(),
+      isOnline: true
     });
 
-    // Announce join to chat
-    await addSystemMessage(`${currentUser.displayName.split(' ')[0]} joined the chat 👋`);
+    // Only post join message on fresh session
+    if (!alreadyOnline) {
+      await addSystemMessage(`${currentUser.displayName.split(' ')[0]} joined the chat ðŸ‘‹`);
+    }
+    // FIX #6: Removed duplicate beforeunload here â€” handled at bottom of file
 
-    // Auto remove when tab closes
-    window.addEventListener('beforeunload', setUserOffline);
   } catch (e) {
     console.error('Error setting online status:', e);
   }
@@ -261,18 +264,15 @@ async function setUserOffline() {
 }
 
 function subscribeOnlineUsers() {
+  if (unsubOnline) { unsubOnline(); unsubOnline = null; }
   unsubOnline = onSnapshot(collection(db, 'onlineUsers'), function(snapshot) {
     const users = [];
     snapshot.forEach(function(d) { users.push(d.data()); });
 
-    // Update count
-    onlineCount.textContent    = users.length;
-    headerOnline.textContent   = users.length;
+    onlineCount.textContent  = users.length;
+    headerOnline.textContent = users.length;
 
-    // Render user list in sidebar
     renderOnlineUsers(users);
-
-    // Update typing indicator (filter current user)
     updateTypingFromSnapshot(users);
   });
 }
@@ -281,11 +281,9 @@ function renderOnlineUsers(users) {
   onlineList.innerHTML = '';
 
   users.forEach(function(user) {
-    const el = document.createElement('div');
+    const el  = document.createElement('div');
     el.className = 'online-user';
-
     const isMe = currentUser && user.uid === currentUser.uid;
-
     el.innerHTML = `
       <img class="ou-avatar"
            src="${user.photoURL || generateAvatar(user.name)}"
@@ -294,56 +292,145 @@ function renderOnlineUsers(users) {
       <span class="ou-name">${escapeHTML(user.name.split(' ')[0])}</span>
       ${isMe ? '<span class="ou-you">you</span>' : ''}
     `;
-
     onlineList.appendChild(el);
   });
+
+  // Mirror into activity panel
+  const mirror     = document.getElementById('apOnlineMirror');
+  const syncFill   = document.getElementById('apSyncFill');
+  const syncPct    = document.getElementById('apSyncPct');
+  const memberFill = document.getElementById('apMemberFill');
+  const memberPct  = document.getElementById('apMemberPct');
+
+  if (mirror) {
+    mirror.innerHTML = '';
+    users.forEach(function(user) {
+      const isMe = currentUser && user.uid === currentUser.uid;
+      const row  = document.createElement('div');
+      row.className = 'ap-user-row';
+      row.innerHTML = `
+        <img class="ap-user-avatar"
+             src="${user.photoURL || generateAvatar(user.name)}"
+             alt="${escapeHTML(user.name)}"
+             onerror="this.src='${generateAvatar(user.name)}'" />
+        <span class="ap-user-name">${escapeHTML(user.name.split(' ')[0])}</span>
+        ${isMe ? '<span class="ap-user-you">you</span>' : ''}
+      `;
+      mirror.appendChild(row);
+    });
+
+    const count     = users.length;
+    const energyPct = Math.min(100, count * 18);
+    if (syncFill)   syncFill.style.width   = energyPct + '%';
+    if (syncPct)    syncPct.textContent    = energyPct + '%';
+    if (memberFill) memberFill.style.width = Math.min(100, count * 20) + '%';
+    if (memberPct)  memberPct.textContent  = count;
+  }
 }
 
 
 // ============================================================
-// MESSAGES — LOAD & LISTEN
+// MESSAGES â€” LOAD & LISTEN
 // ============================================================
 
 function loadMessages() {
-  // Query last 100 messages, ordered by timestamp
-  const q = query(messagesRef, orderBy('timestamp', 'asc'), limit(100));
+  if (unsubMessages) { unsubMessages(); unsubMessages = null; }
+  if (window._pollInterval) { clearInterval(window._pollInterval); window._pollInterval = null; }
+  if (window._snapshotWatchdog) { clearInterval(window._snapshotWatchdog); window._snapshotWatchdog = null; }
 
   lastSenderId = null;
   lastMsgTime  = null;
 
-  unsubMessages = onSnapshot(q, function(snapshot) {
-    snapshot.docChanges().forEach(function(change) {
-      if (change.type === 'added') {
-        // New message received
-        appendMessage(change.doc.id, change.doc.data());
+  let snapshotFired  = false;
+  let lastSnapshotAt = Date.now();
 
-        // Play notification sound if message is from someone else
-        if (change.doc.data().uid !== currentUser?.uid) {
-          playNotificationSound();
+  const q = query(messagesRef, orderBy('timestamp', 'asc'), limit(100));
+
+  unsubMessages = onSnapshot(
+    q,
+    function(snapshot) {
+      snapshotFired  = true;
+      lastSnapshotAt = Date.now();
+
+      snapshot.docChanges().forEach(function(change) {
+        if (change.type === 'added') {
+          if (document.getElementById('msg-' + change.doc.id)) return;
+          appendMessage(change.doc.id, change.doc.data());
+          if (change.doc.data().uid !== currentUser?.uid) {
+            playNotificationSound();
+          }
         }
-      }
-
-      if (change.type === 'removed') {
-        // Message was deleted
-        const msgEl = document.getElementById('msg-' + change.doc.id);
-        if (msgEl) {
-          msgEl.querySelector('.msg-text').innerHTML = '<em class="msg-deleted">Message deleted</em>';
-          msgEl.querySelector('.btn-delete-msg')?.remove();
+        if (change.type === 'removed') {
+          const isStillPresent = snapshot.docs.some(function(d) { return d.id === change.doc.id; });
+          const msgEl = document.getElementById('msg-' + change.doc.id);
+          if (msgEl && !isStillPresent) {
+            const msgText = msgEl.querySelector('.msg-text');
+            if (msgText) msgText.innerHTML = '<em class="msg-deleted">Message deleted</em>';
+            msgEl.querySelector('.btn-delete-msg')?.remove();
+          }
         }
-      }
-    });
+      });
+      scrollToBottom();
+    },
+    function(error) {
+      console.error('onSnapshot failed:', error.code, error.message);
+      if (unsubMessages) { unsubMessages(); unsubMessages = null; }
+      if (window._snapshotWatchdog) { clearInterval(window._snapshotWatchdog); window._snapshotWatchdog = null; }
+      startPolling();
+    }
+  );
 
-    scrollToBottom();
-  });
+  // Watchdog: if snapshot stops firing for 20 seconds, switch to polling
+  window._snapshotWatchdog = setInterval(function() {
+    if (!currentUser) return;
+    const silentFor = Date.now() - lastSnapshotAt;
+    if (snapshotFired && silentFor > 20000) {
+      console.warn('Snapshot silent for 20s â€” switching to polling');
+      if (unsubMessages) { unsubMessages(); unsubMessages = null; }
+      clearInterval(window._snapshotWatchdog);
+      window._snapshotWatchdog = null;
+      startPolling();
+    }
+    if (!snapshotFired && silentFor > 8000) {
+      console.warn('Snapshot never fired â€” switching to polling');
+      if (unsubMessages) { unsubMessages(); unsubMessages = null; }
+      clearInterval(window._snapshotWatchdog);
+      window._snapshotWatchdog = null;
+      startPolling();
+    }
+  }, 5000);
 }
 
+async function startPolling() {
+  if (window._pollInterval) { clearInterval(window._pollInterval); window._pollInterval = null; }
 
+  async function poll() {
+    if (!currentUser) return;
+    try {
+      const q = query(messagesRef, orderBy('timestamp', 'asc'), limit(100));
+      const snap = await getDocs(q);
+      snap.forEach(function(docSnap) {
+        if (!document.getElementById('msg-' + docSnap.id)) {
+          appendMessage(docSnap.id, docSnap.data());
+        }
+      });
+      scrollToBottom();
+    } catch (e) {
+      console.error('Poll error:', e);
+    }
+  }
+
+  await poll();
+  window._pollInterval = setInterval(poll, 5000);
+}
 // ============================================================
 // RENDER A MESSAGE
+// FIX #1: appendMessage function brace structure fully corrected.
+// The timestamp block was accidentally closing the function early.
 // ============================================================
 
 function appendMessage(id, data) {
-  // Skip system messages (handled separately)
+  // System messages render differently
   if (data.type === 'system') {
     appendSystemMessage(data.text);
     lastSenderId = null;
@@ -351,12 +438,20 @@ function appendMessage(id, data) {
   }
 
   const isOwn = currentUser && data.uid === currentUser.uid;
-  const msgTime = data.timestamp?.toDate();
+  let msgTime  = null;
 
-  // Determine if this message should be "compact"
-  // (same sender within 3 minutes = no avatar/name repeat)
-  const THREE_MIN = 3 * 60 * 1000;
-  const isCompact = (
+  // FIX #1 â€” this block is now properly INSIDE the function
+  if (data.timestamp) {
+    if (typeof data.timestamp.toDate === 'function') {
+      msgTime = data.timestamp.toDate();
+    } else {
+      msgTime = new Date(data.timestamp);
+    }
+  }
+
+  // Compact grouping: same sender within 3 minutes
+  const THREE_MIN  = 3 * 60 * 1000;
+  const isCompact  = (
     lastSenderId === data.uid &&
     lastMsgTime  &&
     msgTime      &&
@@ -364,22 +459,18 @@ function appendMessage(id, data) {
   );
 
   lastSenderId = data.uid;
-  lastMsgTime  = msgTime;
+  lastMsgTime  = msgTime || lastMsgTime;
 
   const colorClass = getUserColor(data.uid);
-
-  const el = document.createElement('div');
-  el.className = `message ${isOwn ? 'own' : ''} ${isCompact ? 'compact' : ''}`;
-  el.id = 'msg-' + id;
+  const el         = document.createElement('div');
+  el.className     = `message ${isOwn ? 'own' : ''} ${isCompact ? 'compact' : ''}`;
+  el.id            = 'msg-' + id;
 
   const avatarSrc = data.photoURL || generateAvatar(data.name);
   const timeStr   = msgTime ? formatTime(msgTime) : '';
 
-  // Only show delete button on own messages
   const deleteBtn = isOwn ? `
-    <button class="btn-delete-msg" onclick="deleteMessage('${id}')" title="Delete message">
-      ✕
-    </button>
+    <button class="btn-delete-msg" onclick="deleteMessage('${id}')" title="Delete message">Ã—</button>
   ` : '';
 
   el.innerHTML = `
@@ -403,8 +494,8 @@ function appendMessage(id, data) {
 }
 
 function appendSystemMessage(text) {
-  const el = document.createElement('div');
-  el.className = 'join-notification';
+  const el      = document.createElement('div');
+  el.className  = 'join-notification';
   el.textContent = text;
   messagesEl.appendChild(el);
 }
@@ -414,13 +505,17 @@ function appendSystemMessage(text) {
 // SEND MESSAGE
 // ============================================================
 
+// AFTER
 async function sendMessage() {
   const text = msgInput.value.trim();
-  if (!text || !currentUser) return;
+  if (!text) return;
+  if (!currentUser) {
+    showToast('Not signed in. Please reload and log in again.', 'error');
+    return;
+  }
 
-  // Disable input briefly to prevent double-send
-  sendBtn.disabled   = true;
-  msgInput.disabled  = true;
+  sendBtn.disabled  = true;
+  msgInput.disabled = true;
 
   try {
     await addDoc(messagesRef, {
@@ -428,16 +523,14 @@ async function sendMessage() {
       name:      currentUser.displayName,
       photoURL:  currentUser.photoURL || '',
       text:      text,
-      timestamp: serverTimestamp()
+      timestamp: new Date()
     });
 
-    msgInput.value = '';
+    msgInput.value        = '';
     charCount.textContent = '';
-    sendBtn.disabled = false;
-    msgInput.disabled = false;
+    sendBtn.disabled      = false;
+    msgInput.disabled     = false;
     msgInput.focus();
-
-    // Clear typing indicator
     clearTyping();
 
   } catch (error) {
@@ -448,10 +541,8 @@ async function sendMessage() {
   }
 }
 
-// Send button click
 sendBtn.addEventListener('click', sendMessage);
 
-// Enter key sends, Shift+Enter does nothing (single-line input)
 msgInput.addEventListener('keydown', function(e) {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
@@ -464,11 +555,9 @@ msgInput.addEventListener('keydown', function(e) {
 // DELETE MESSAGE
 // ============================================================
 
-// Exposed globally so inline onclick can call it
 window.deleteMessage = async function(msgId) {
   if (!currentUser) return;
   if (!confirm('Delete this message?')) return;
-
   try {
     await deleteDoc(doc(db, 'messages', msgId));
   } catch (e) {
@@ -480,56 +569,50 @@ window.deleteMessage = async function(msgId) {
 
 // ============================================================
 // SYSTEM MESSAGES
-// (user joined notifications stored in Firestore)
 // ============================================================
 
 async function addSystemMessage(text) {
+  if (!currentUser) return;
   try {
     await addDoc(messagesRef, {
       type:      'system',
+      uid:       currentUser.uid,
       text:      text,
-      timestamp: serverTimestamp()
+      timestamp: new Date()
     });
   } catch (e) {
     console.error('System msg error:', e);
   }
 }
 
-
 // ============================================================
-// INPUT BEHAVIOR — Character count + send button enable
+// INPUT BEHAVIOR â€” character count + send button enable
 // ============================================================
 
 msgInput.addEventListener('input', function() {
   const len = msgInput.value.length;
   const max = 500;
 
-  // Enable/disable send button
   sendBtn.disabled = len === 0;
 
-  // Character counter
   if (len > 400) {
     charCount.textContent = `${len}/${max}`;
-    charCount.className = 'char-count ' + (len >= max ? 'over' : 'warn');
+    charCount.className   = 'char-count ' + (len >= max ? 'over' : 'warn');
   } else {
     charCount.textContent = '';
-    charCount.className = 'char-count';
+    charCount.className   = 'char-count';
   }
 
-  // Typing indicator logic
   handleTypingIndicator();
 });
 
 
 // ============================================================
 // TYPING INDICATOR
-// Stores typing state in the onlineUsers document
 // ============================================================
 
 function handleTypingIndicator() {
   if (!currentUser) return;
-
-  // Clear existing timeout
   clearTimeout(typingTimeout);
 
   if (!isTyping) {
@@ -537,7 +620,6 @@ function handleTypingIndicator() {
     updateTypingStatus(true);
   }
 
-  // Stop typing after 2 seconds of inactivity
   typingTimeout = setTimeout(function() {
     clearTyping();
   }, 2000);
@@ -558,23 +640,20 @@ async function updateTypingStatus(typing) {
       typing: typing ? currentUser.displayName.split(' ')[0] : deleteField()
     });
   } catch (e) {
-    // Ignore — not critical
+    // Not critical â€” ignore
   }
 }
 
 function updateTypingFromSnapshot(users) {
-  // Find users who are typing (other than current user)
   const typingUsers = users
     .filter(u => u.typing && u.uid !== currentUser?.uid)
     .map(u => u.typing);
 
   if (typingUsers.length > 0) {
     typingIndicator.style.display = 'flex';
-    if (typingUsers.length === 1) {
-      typingText.textContent = `${typingUsers[0]} is typing...`;
-    } else {
-      typingText.textContent = `${typingUsers.join(', ')} are typing...`;
-    }
+    typingText.textContent = typingUsers.length === 1
+      ? `${typingUsers[0]} is typing...`
+      : `${typingUsers.join(', ')} are typing...`;
   } else {
     typingIndicator.style.display = 'none';
   }
@@ -590,23 +669,19 @@ emojiBtn.addEventListener('click', function(e) {
   emojiPicker.classList.toggle('open');
 });
 
-// Click an emoji → insert into input
 emojiPicker.querySelectorAll('span').forEach(function(span) {
   span.addEventListener('click', function() {
     const emoji = span.textContent;
     const pos   = msgInput.selectionStart || msgInput.value.length;
-    msgInput.value = msgInput.value.slice(0, pos) + emoji + msgInput.value.slice(pos);
+    msgInput.value          = msgInput.value.slice(0, pos) + emoji + msgInput.value.slice(pos);
     msgInput.focus();
     msgInput.selectionStart = pos + emoji.length;
     msgInput.selectionEnd   = pos + emoji.length;
-
-    // Trigger input event to update char count & send button
     msgInput.dispatchEvent(new Event('input'));
     emojiPicker.classList.remove('open');
   });
 });
 
-// Close emoji picker when clicking outside
 document.addEventListener('click', function(e) {
   if (!emojiBtn.contains(e.target) && !emojiPicker.contains(e.target)) {
     emojiPicker.classList.remove('open');
@@ -631,15 +706,11 @@ sidebarOverlay.addEventListener('click', function() {
 
 // ============================================================
 // SCROLL TO BOTTOM
-// Auto-scroll to latest message
 // ============================================================
 
 function scrollToBottom(force) {
-  // Only auto-scroll if user is near the bottom (within 200px)
-  // OR if force is true
   const threshold = 200;
   const nearBottom = messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight < threshold;
-
   if (nearBottom || force) {
     setTimeout(function() {
       messagesEl.scrollTop = messagesEl.scrollHeight;
@@ -647,21 +718,32 @@ function scrollToBottom(force) {
   }
 }
 
+messagesEl.addEventListener('scroll', function() {
+  const distFromBottom = messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight;
+  if (distFromBottom > 200) {
+    scrollBottomBtn.classList.add('visible');
+  } else {
+    scrollBottomBtn.classList.remove('visible');
+  }
+});
+
+scrollBottomBtn.addEventListener('click', function() {
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+  scrollBottomBtn.classList.remove('visible');
+});
+
 
 // ============================================================
 // TOAST NOTIFICATIONS
 // ============================================================
 
 function showToast(message, type = 'info') {
-  const icons = { success: '✅', error: '❌', info: '💬' };
-
+  const icons = { success: 'âœ…', error: 'âŒ', info: 'ðŸ’¬' };
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
-  toast.innerHTML = `<span>${icons[type] || '💬'}</span> ${escapeHTML(message)}`;
-
+  toast.innerHTML = `<span>${icons[type] || 'ðŸ’¬'}</span> ${escapeHTML(message)}`;
   toastContainer.appendChild(toast);
 
-  // Auto-remove after 3.5 seconds
   setTimeout(function() {
     toast.style.animation = 'toastOut 0.3s ease forwards';
     setTimeout(function() { toast.remove(); }, 300);
@@ -671,7 +753,6 @@ function showToast(message, type = 'info') {
 
 // ============================================================
 // NOTIFICATION SOUND
-// Generated via Web Audio API — no file needed
 // ============================================================
 
 let audioCtx = null;
@@ -679,63 +760,50 @@ let audioCtx = null;
 function playNotificationSound() {
   try {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
     const oscillator = audioCtx.createOscillator();
     const gainNode   = audioCtx.createGain();
-
     oscillator.connect(gainNode);
     gainNode.connect(audioCtx.destination);
-
-    oscillator.type      = 'sine';
+    oscillator.type = 'sine';
     oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
     oscillator.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.1);
-
     gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
     gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
-
     oscillator.start(audioCtx.currentTime);
     oscillator.stop(audioCtx.currentTime + 0.3);
   } catch (e) {
-    // Audio not supported — silently fail
+    // Audio not supported â€” ignore
   }
 }
 
 
 // ============================================================
 // PARTICLE BACKGROUND (Login Screen)
-// Creates floating dots for atmosphere
 // ============================================================
 
 function createParticles() {
   const container = document.getElementById('particles');
   if (!container) return;
-
   container.innerHTML = '';
 
   const colors = ['#00E5FF', '#7B61FF', '#00FF9D', '#FFD93D'];
   const count  = window.innerWidth < 500 ? 20 : 40;
 
   for (let i = 0; i < count; i++) {
-    const p = document.createElement('div');
+    const p     = document.createElement('div');
     p.className = 'particle';
-
     const size  = Math.random() * 4 + 2;
     const color = colors[Math.floor(Math.random() * colors.length)];
-    const left  = Math.random() * 100;
-    const delay = Math.random() * 8;
-    const dur   = Math.random() * 10 + 8;
-
     p.style.cssText = `
       width: ${size}px;
       height: ${size}px;
       background: ${color};
-      left: ${left}%;
+      left: ${Math.random() * 100}%;
       bottom: -20px;
       box-shadow: 0 0 ${size * 2}px ${color};
-      animation-duration: ${dur}s;
-      animation-delay: ${delay}s;
+      animation-duration: ${Math.random() * 10 + 8}s;
+      animation-delay: ${Math.random() * 8}s;
     `;
-
     container.appendChild(p);
   }
 }
@@ -745,13 +813,11 @@ function createParticles() {
 // UTILITY FUNCTIONS
 // ============================================================
 
-// Format timestamp to readable time (e.g. "2:45 PM")
 function formatTime(date) {
   if (!date) return '';
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-// Escape HTML to prevent XSS injection
 function escapeHTML(str) {
   if (!str) return '';
   return str
@@ -762,43 +828,39 @@ function escapeHTML(str) {
     .replace(/'/g, '&#039;');
 }
 
-// Generate a simple colored avatar placeholder when no photo available
 function generateAvatar(name) {
   const colors = ['#00E5FF', '#7B61FF', '#00FF9D', '#FFD93D', '#FF6B9D'];
   const char   = (name || '?').charAt(0).toUpperCase();
   let hash     = 0;
   for (let i = 0; i < (name || '').length; i++) hash += (name || '').charCodeAt(i);
   const color  = colors[hash % colors.length];
-
-  // Return a data URI SVG as placeholder avatar
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36">
+  const svg    = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36">
     <rect width="36" height="36" rx="18" fill="${color}22" stroke="${color}" stroke-width="1.5"/>
     <text x="18" y="23" text-anchor="middle" font-size="16" font-family="Syne,sans-serif" font-weight="700" fill="${color}">${char}</text>
   </svg>`;
-
   return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
 }
 
 
 // ============================================================
-// INIT ON PAGE LOAD
+// INIT â€” ES modules are deferred, DOM is ready here
+// FIX #5: DOMContentLoaded removed â€” fires before module executes
 // ============================================================
+createParticles();
 
-document.addEventListener('DOMContentLoaded', function() {
-  // Start with login screen and particles
-  createParticles();
-
-  // Focus input when clicking anywhere in the chat main area
-  document.getElementById('chatApp')?.addEventListener('click', function(e) {
-    if (!emojiPicker.classList.contains('open') && e.target.tagName !== 'BUTTON') {
-      msgInput.focus();
-    }
-  });
-
-  console.log('⚡ NeonChat initialized. Waiting for auth...');
+document.getElementById('chatApp')?.addEventListener('click', function(e) {
+  if (!emojiPicker.classList.contains('open') && e.target.tagName !== 'BUTTON') {
+    msgInput.focus();
+  }
 });
 
-// Cleanup on page unload
+console.log('âš¡ StarEnds initialized. Waiting for auth...');
+
+
+// ============================================================
+// CLEANUP ON PAGE UNLOAD
+// FIX #6: Single beforeunload handler â€” covers both typing + offline
+// ============================================================
 window.addEventListener('beforeunload', function() {
   clearTyping();
   setUserOffline();
