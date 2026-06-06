@@ -218,7 +218,7 @@ function stopListeners() {
   if (window._pollInterval)      { clearInterval(window._pollInterval);      window._pollInterval      = null; }
   if (window._snapshotWatchdog)  { clearInterval(window._snapshotWatchdog);  window._snapshotWatchdog  = null; }
   if (messagesEl) {
-    messagesEl.innerHTML = '<div class="system-message" id="welcomeMsg">&#9889; Welcome to <strong>#general</strong> -- StarEnds is live. Say something!</div>';
+    messagesEl.innerHTML = '<div class="system-message" id="welcomeMsg">⚡ Welcome to <strong>#general</strong> — StarEnds is live. Say something!</div>';
   }
   lastSenderId = null;
   lastMsgTime  = null;
@@ -409,10 +409,10 @@ async function startPolling() {
     try {
       const q = query(messagesRef, orderBy('timestamp', 'asc'), limit(100));
       const snap = await getDocs(q);
-      snap.forEach(function(docSnap) {
-        if (!document.getElementById('msg-' + docSnap.id)) {
-          appendMessage(docSnap.id, docSnap.data());
-        }
+// ============================================================
+// RENDER A MESSAGE
+// appendMessage function -- brace structure fully corrected.
+// ============================================================
       });
       scrollToBottom();
     } catch (e) {
@@ -440,7 +440,7 @@ function appendMessage(id, data) {
   const isOwn = currentUser && data.uid === currentUser.uid;
   let msgTime  = null;
 
-  // FIX #1 -- this block is now properly INSIDE the function
+  // timestamp block is properly INSIDE the function
   if (data.timestamp) {
     if (typeof data.timestamp.toDate === 'function') {
       msgTime = data.timestamp.toDate();
@@ -587,4 +587,281 @@ async function addSystemMessage(text) {
 
 // ============================================================
 // INPUT BEHAVIOR -- character count + send button enable
-// ================================================
+// ============================================================
+
+msgInput.addEventListener('input', function() {
+  const len = msgInput.value.length;
+  const max = 500;
+
+  sendBtn.disabled = len === 0;
+
+  if (len > 400) {
+    charCount.textContent = `${len}/${max}`;
+    charCount.className   = 'char-count ' + (len >= max ? 'over' : 'warn');
+  } else {
+    charCount.textContent = '';
+    charCount.className   = 'char-count';
+  }
+
+  handleTypingIndicator();
+});
+
+
+// ============================================================
+// TYPING INDICATOR
+// ============================================================
+
+function handleTypingIndicator() {
+  if (!currentUser) return;
+  clearTimeout(typingTimeout);
+
+  if (!isTyping) {
+    isTyping = true;
+    updateTypingStatus(true);
+  }
+
+  typingTimeout = setTimeout(function() {
+    clearTyping();
+  }, 2000);
+}
+
+function clearTyping() {
+  clearTimeout(typingTimeout);
+  if (isTyping) {
+    isTyping = false;
+    updateTypingStatus(false);
+  }
+}
+
+async function updateTypingStatus(typing) {
+  if (!currentUser) return;
+  try {
+    await updateDoc(doc(onlineRef, currentUser.uid), {
+      typing: typing ? currentUser.displayName.split(' ')[0] : deleteField()
+    });
+  } catch (e) {
+    // Not critical -- ignore
+  }
+}
+
+function updateTypingFromSnapshot(users) {
+  const typingUsers = users
+    .filter(u => u.typing && u.uid !== currentUser?.uid)
+    .map(u => u.typing);
+
+  if (typingUsers.length > 0) {
+    typingIndicator.style.display = 'flex';
+    typingText.textContent = typingUsers.length === 1
+      ? `${typingUsers[0]} is typing...`
+      : `${typingUsers.join(', ')} are typing...`;
+  } else {
+    typingIndicator.style.display = 'none';
+  }
+}
+
+
+// ============================================================
+// EMOJI PICKER
+// ============================================================
+
+emojiBtn.addEventListener('click', function(e) {
+  e.stopPropagation();
+  emojiPicker.classList.toggle('open');
+});
+
+emojiPicker.querySelectorAll('span').forEach(function(span) {
+  span.addEventListener('click', function() {
+    const emoji = span.textContent;
+    const pos   = msgInput.selectionStart || msgInput.value.length;
+    msgInput.value          = msgInput.value.slice(0, pos) + emoji + msgInput.value.slice(pos);
+    msgInput.focus();
+    msgInput.selectionStart = pos + emoji.length;
+    msgInput.selectionEnd   = pos + emoji.length;
+    msgInput.dispatchEvent(new Event('input'));
+    emojiPicker.classList.remove('open');
+  });
+});
+
+document.addEventListener('click', function(e) {
+  if (!emojiBtn.contains(e.target) && !emojiPicker.contains(e.target)) {
+    emojiPicker.classList.remove('open');
+  }
+});
+
+
+// ============================================================
+// MOBILE SIDEBAR TOGGLE
+// ============================================================
+
+menuBtn.addEventListener('click', function() {
+  sidebar.classList.toggle('mobile-open');
+  sidebarOverlay.classList.toggle('visible');
+});
+
+sidebarOverlay.addEventListener('click', function() {
+  sidebar.classList.remove('mobile-open');
+  sidebarOverlay.classList.remove('visible');
+});
+
+
+// ============================================================
+// SCROLL TO BOTTOM
+// ============================================================
+
+function scrollToBottom(force) {
+  const threshold = 200;
+  const nearBottom = messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight < threshold;
+  if (nearBottom || force) {
+    setTimeout(function() {
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }, 50);
+  }
+}
+
+messagesEl.addEventListener('scroll', function() {
+  const distFromBottom = messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight;
+  if (distFromBottom > 200) {
+    scrollBottomBtn.classList.add('visible');
+  } else {
+    scrollBottomBtn.classList.remove('visible');
+  }
+});
+
+scrollBottomBtn.addEventListener('click', function() {
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+  scrollBottomBtn.classList.remove('visible');
+});
+
+
+// ============================================================
+// TOAST NOTIFICATIONS
+// ============================================================
+
+function showToast(message, type = 'info') {
+  const icons = { success: '✅', error: '❌', info: '💬' };
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `<span>${icons[type] || '💬'}</span> ${escapeHTML(message)}`;
+  toastContainer.appendChild(toast);
+
+  setTimeout(function() {
+    toast.style.animation = 'toastOut 0.3s ease forwards';
+    setTimeout(function() { toast.remove(); }, 300);
+  }, 3500);
+}
+
+
+// ============================================================
+// NOTIFICATION SOUND
+// ============================================================
+
+let audioCtx = null;
+
+function playNotificationSound() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioCtx.createOscillator();
+    const gainNode   = audioCtx.createGain();
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
+    oscillator.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.1);
+    gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+    oscillator.start(audioCtx.currentTime);
+    oscillator.stop(audioCtx.currentTime + 0.3);
+  } catch (e) {
+    // Audio not supported -- ignore
+  }
+}
+
+
+// ============================================================
+// PARTICLE BACKGROUND (Login Screen)
+// ============================================================
+
+function createParticles() {
+  const container = document.getElementById('particles');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const colors = ['#00E5FF', '#7B61FF', '#00FF9D', '#FFD93D'];
+  const count  = window.innerWidth < 500 ? 20 : 40;
+
+  for (let i = 0; i < count; i++) {
+    const p     = document.createElement('div');
+    p.className = 'particle';
+    const size  = Math.random() * 4 + 2;
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    p.style.cssText = `
+      width: ${size}px;
+      height: ${size}px;
+      background: ${color};
+      left: ${Math.random() * 100}%;
+      bottom: -20px;
+      box-shadow: 0 0 ${size * 2}px ${color};
+      animation-duration: ${Math.random() * 10 + 8}s;
+      animation-delay: ${Math.random() * 8}s;
+    `;
+    container.appendChild(p);
+  }
+}
+
+
+// ============================================================
+// UTILITY FUNCTIONS
+// ============================================================
+
+function formatTime(date) {
+  if (!date) return '';
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function escapeHTML(str) {
+  if (!str) return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function generateAvatar(name) {
+  const colors = ['#00E5FF', '#7B61FF', '#00FF9D', '#FFD93D', '#FF6B9D'];
+  const char   = (name || '?').charAt(0).toUpperCase();
+  let hash     = 0;
+  for (let i = 0; i < (name || '').length; i++) hash += (name || '').charCodeAt(i);
+  const color  = colors[hash % colors.length];
+  const svg    = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36">
+    <rect width="36" height="36" rx="18" fill="${color}22" stroke="${color}" stroke-width="1.5"/>
+    <text x="18" y="23" text-anchor="middle" font-size="16" font-family="Syne,sans-serif" font-weight="700" fill="${color}">${char}</text>
+  </svg>`;
+  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+}
+
+
+// ============================================================
+// INIT -- ES modules are deferred, DOM is ready here
+// DOMContentLoaded removed -- fires before module executes
+// ============================================================
+createParticles();
+
+document.getElementById('chatApp')?.addEventListener('click', function(e) {
+  if (!emojiPicker.classList.contains('open') && e.target.tagName !== 'BUTTON') {
+    msgInput.focus();
+  }
+});
+
+console.log('⚡ StarEnds initialized. Waiting for auth...');
+
+
+// ============================================================
+// CLEANUP ON PAGE UNLOAD
+// Single beforeunload handler -- covers both typing + offline
+// ============================================================
+window.addEventListener('beforeunload', function() {
+  clearTyping();
+  setUserOffline();
+});
