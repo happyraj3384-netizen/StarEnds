@@ -409,10 +409,10 @@ async function startPolling() {
     try {
       const q = query(messagesRef, orderBy('timestamp', 'asc'), limit(100));
       const snap = await getDocs(q);
-// ============================================================
-// RENDER A MESSAGE
-// appendMessage function -- brace structure fully corrected.
-// ============================================================
+      snap.forEach(function(docSnap) {
+        if (!document.getElementById('msg-' + docSnap.id)) {
+          appendMessage(docSnap.id, docSnap.data());
+        }
       });
       scrollToBottom();
     } catch (e) {
